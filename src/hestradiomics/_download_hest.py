@@ -11,7 +11,7 @@ import scanpy as sc
 from dotenv import load_dotenv
 from huggingface_hub import HfApi, login, snapshot_download
 
-from hestradiomics._utils import ensure_dir, setup_logger
+from hestradiomics._utils import ensure_dir 
 from hestradiomics.config import (
     DOWNLOAD_ROOT, 
     DOWNLOAD_ONCOTREE, 
