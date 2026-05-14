@@ -9,6 +9,9 @@ DOWNLOAD_ROOT = "./data"
 DOWNLOAD_ONCOTREE = [
     "IDC", 
     "SKCM",
+    "LUNG",
+    "PAAD", 
+    "COAD", 
 ]
 DOWNLOAD_REQUIRED = [
     "patches",
