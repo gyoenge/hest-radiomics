@@ -29,17 +29,22 @@ from hestradiomics.utils.h5 import ensure_uint8_rgb
 # Paths / Constants
 # ============================================================
 
+DATA_ROOT = "/root/workspace/hest-radiomics/data/hest/IDC"
 SAMPLE_ID = "NCBI783"
 
-H5_PATH = f"/root/workspace/hest-radiomics/data/hest/IDC/patches/{SAMPLE_ID}.h5"
-OUTPUT_DIR = f"/root/workspace/hest-radiomics/data/hest/IDC/segment/{SAMPLE_ID}/cellvitseg"
+PATCH_H5_PATH = f"{DATA_ROOT}/patches/{SAMPLE_ID}.h5"
+
+SEGMENT_DIR = f"{DATA_ROOT}/segment"
+SEGMENT_VIS_DIR = f"{DATA_ROOT}/segment_vis"
+
+SEG_H5_PATH = f"{SEGMENT_DIR}/{SAMPLE_ID}.h5"
+SUMMARY_JSON_PATH = f"{SEGMENT_DIR}/{SAMPLE_ID}.summary.json"
+CELLVIT_RUNTIME_DIR = f"{SEGMENT_DIR}/_cellvit_runtime"
+
+OVERLAY_DIR = f"{SEGMENT_VIS_DIR}/{SAMPLE_ID}"
 
 MODEL_NAME = "CellViT-SAM-H-x20.pth"
 MODEL_PATH = f"/root/workspace/hest-radiomics/models/{MODEL_NAME}"
-
-SEG_H5_NAME = "cellseg.h5"
-SUMMARY_JSON_NAME = "summary.json"
-OVERLAY_DIR_NAME = "overlay"
 
 DEVICE = "cuda:0"
 BATCH_SIZE = 8
@@ -64,11 +69,8 @@ def infer_cellvit_model_type(model_name: str) -> str:
 
     if "SAM" in name:
         return "SAM"
-
     if "HIPT" in name:
         return "HIPT"
-
-    # CellViT-256 계열은 SAM/HIPT가 아니므로 기본 CellViT로 처리
     if "CELLVIT" in name or "256" in name:
         return "CellViT"
 
@@ -83,10 +85,8 @@ def debug_print(verbose: bool, *args, **kwargs):
 def _decode_scalar(v):
     if isinstance(v, np.ndarray) and v.shape:
         v = v[0]
-
     if isinstance(v, bytes):
         return v.decode("utf-8")
-
     return str(v)
 
 
@@ -193,7 +193,6 @@ class H5PatchDataset(Dataset):
         for k in candidates:
             if k in f:
                 return k
-
         raise KeyError(f"None of keys found: {candidates}")
 
     def __len__(self) -> int:
@@ -234,6 +233,7 @@ class CellViTInferenceAdapter:
         model_path: str,
         model_name: str,
         output_dir: str,
+        runtime_dir: Optional[str] = None,
         device: str = "cuda:0",
         verbose: bool = False,
     ):
@@ -247,7 +247,7 @@ class CellViTInferenceAdapter:
         self.device = device
         self.verbose = verbose
 
-        self._tmp_root = os.path.join(output_dir, "_cellvit_runtime")
+        self._tmp_root = runtime_dir or os.path.join(output_dir, "_cellvit_runtime")
         os.makedirs(self._tmp_root, exist_ok=True)
 
         self.runner = self._build_runner(CellViTInference, SystemConfiguration)
@@ -295,7 +295,6 @@ class CellViTInferenceAdapter:
                     gpu_id = int(self.device.split(":")[-1])
                 else:
                     gpu_id = 0
-
                 kwargs[name] = [gpu_id] if name == "gpu_ids" else gpu_id
 
             elif name in ("mixed_precision", "amp"):
@@ -356,7 +355,6 @@ class CellViTInferenceAdapter:
 
         for name in method_names:
             fn = getattr(self.runner, name, None)
-
             if fn is None:
                 continue
 
@@ -436,7 +434,6 @@ class CellViTInferenceAdapter:
             fg = np.ascontiguousarray(fg)
 
             num_labels, labels = cv2.connectedComponents(fg)
-
             debug_print(self.verbose, "[DEBUG] connected components:", num_labels - 1)
 
             labels = np.asarray(labels, dtype=np.int32)
@@ -493,7 +490,6 @@ class CellViTInferenceAdapter:
             for k in ["geometry", "geometries"]:
                 if k in raw and isinstance(raw[k], list):
                     geoms = raw[k]
-
                     return gpd.GeoDataFrame(
                         {"cell_id_in_patch": list(range(len(geoms)))},
                         geometry=geoms,
@@ -514,7 +510,6 @@ class CellViTInferenceAdapter:
 
             if raw.ndim == 3 and 1 in raw.shape:
                 raw = np.squeeze(raw)
-
                 if raw.ndim == 2:
                     return raw.astype(np.int32)
 
@@ -526,7 +521,6 @@ class CellViTInferenceAdapter:
 
             if raw.ndim == 3 and 1 in raw.shape:
                 raw = np.squeeze(raw)
-
                 if raw.ndim == 2:
                     return raw.astype(np.int32)
 
@@ -878,8 +872,10 @@ def _gdf_to_cell_rows(
 
 def segment_h5_patches_with_cellvit(
     h5_path: str,
-    output_dir: str,
+    seg_h5_path: str,
     model_path: str,
+    runtime_dir: str,
+    summary_json_path: Optional[str] = None,
     batch_size: int = 8,
     num_workers: int = 0,
     patch_indices: Optional[List[int]] = None,
@@ -890,11 +886,13 @@ def segment_h5_patches_with_cellvit(
     Segment H5 patches with CellViT and save only H5 result.
 
     Output:
-      output_dir/
-        ├── cellseg.h5
-        └── summary.json
+      segment/
+        ├── {sample_id}.h5
+        ├── {sample_id}.summary.json
+        └── _cellvit_runtime/
     """
-    os.makedirs(output_dir, exist_ok=True)
+    os.makedirs(os.path.dirname(seg_h5_path), exist_ok=True)
+    os.makedirs(runtime_dir, exist_ok=True)
 
     dataset = H5PatchDataset(
         h5_path=h5_path,
@@ -914,7 +912,8 @@ def segment_h5_patches_with_cellvit(
         predictor = CellViTInferenceAdapter(
             model_path=model_path,
             model_name=os.path.basename(model_path),
-            output_dir=output_dir,
+            output_dir=os.path.dirname(seg_h5_path),
+            runtime_dir=runtime_dir,
             device=device,
         )
 
@@ -953,7 +952,6 @@ def segment_h5_patches_with_cellvit(
 
     pbar.close()
 
-    seg_h5_path = os.path.join(output_dir, SEG_H5_NAME)
     save_cellseg_h5(
         rows=all_rows,
         summary_rows=summary_rows,
@@ -962,16 +960,17 @@ def segment_h5_patches_with_cellvit(
 
     summary = {
         "h5_path": h5_path,
-        "output_dir": output_dir,
+        "segment_dir": os.path.dirname(seg_h5_path),
+        "runtime_dir": runtime_dir,
         "num_patches": len(dataset),
         "num_polygons": int(len(all_rows)),
         "seg_h5_path": seg_h5_path,
     }
 
-    summary_json_path = os.path.join(output_dir, SUMMARY_JSON_NAME)
-
-    with open(summary_json_path, "w", encoding="utf-8") as f:
-        json.dump(summary, f, indent=2, ensure_ascii=False)
+    if summary_json_path is not None:
+        os.makedirs(os.path.dirname(summary_json_path), exist_ok=True)
+        with open(summary_json_path, "w", encoding="utf-8") as f:
+            json.dump(summary, f, indent=2, ensure_ascii=False)
 
     print("[INFO] segmentation done")
     print(json.dumps(summary, indent=2))
@@ -1080,7 +1079,7 @@ def save_overlays_from_cellseg_h5(
     patch_indices: Optional[List[int]] = None,
 ):
     """
-    Load segmentation result from cellseg.h5 and save overlay PNGs.
+    Load segmentation result from segment/{sample_id}.h5 and save overlay PNGs.
 
     This function does not run CellViT again.
     """
@@ -1135,8 +1134,7 @@ def save_overlays_from_cellseg_h5(
 
 
 # ============================================================
-# Main
-# ============================================================
+
 
 if __name__ == "__main__":
     verify_or_download_model(
@@ -1145,17 +1143,20 @@ if __name__ == "__main__":
     )
 
     seg_h5_path = segment_h5_patches_with_cellvit(
-        h5_path=H5_PATH,
-        output_dir=OUTPUT_DIR,
+        h5_path=PATCH_H5_PATH,
+        seg_h5_path=SEG_H5_PATH,
         model_path=MODEL_PATH,
+        runtime_dir=CELLVIT_RUNTIME_DIR,
+        summary_json_path=SUMMARY_JSON_PATH,
         batch_size=BATCH_SIZE,
         num_workers=NUM_WORKERS,
         device=DEVICE,
     )
 
     save_overlays_from_cellseg_h5(
-        source_h5_path=H5_PATH,
+        source_h5_path=PATCH_H5_PATH,
         seg_h5_path=seg_h5_path,
-        overlay_dir=os.path.join(OUTPUT_DIR, OVERLAY_DIR_NAME),
+        overlay_dir=OVERLAY_DIR,
         use_class_color=USE_CLASS_COLOR,
     )
+
