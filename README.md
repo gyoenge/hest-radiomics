@@ -1,6 +1,6 @@
 # HEST-Radiomics (hestradiomics)
 
-Radiomics extraction and analysis pipeline for HEST dataset with WSI (Whole Slide Image) patches.
+Radiomics feature extraction pipeline for HEST dataset with WSI (Whole Slide Image) patches.
 
 ---
 
@@ -35,6 +35,10 @@ pip install cellvit
 ---
 
 ## Run
+```bash 
+export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
+python src/hestradiomics/run.py
+```
 
 ... 
 
