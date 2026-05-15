@@ -1,52 +1,124 @@
-### Run setting (All True for Full Pipeline)
-RUN_HEST_DOWNLOAD = True 
-RUN_SEGMENT = True
-RUN_OVERLAY = True
-RUN_RADIOMICS_EXTRACTION = True  # Requires previous RUN_HEST_DOWNLOAD & RUN_CELL_SEGMENT
-RUN_STATISTICS = True  # Requires all previous (Optional)
-
-### HEST dataset download setting 
-DOWNLOAD_ROOT = "./data"
-DOWNLOAD_SUBROOT = "hest"
-DOWNLOAD_ONCOTREE = [
-    "IDC", 
-    "SKCM",
-    "LUAD",
-    "PAAD", 
-    "COAD", 
-]
-DOWNLOAD_REQUIRED = [
-    "patches",
-    "st",
-]
-DOWNLOAD_OPTIONAL = [
-    "metadata",
-    "patches_vis",
-    "thumbnails",
-    "spatial_plots", 
-] 
-DOWNLOAD_TECH = [
-    # "Spatial Transcriptomics" | "Visium HD" | "Visium" | "Xenium"
-    "Xenium", 
-]
-
-### Cell-segment setting
-MODEL_NAME = "CellViT-SAM-H-x20.pth"
-MODEL_PATH = f"./models/{MODEL_NAME}"
-
-DEVICE = "cuda:0"
-BATCH_SIZE = 8
-NUM_WORKERS = 0
-USE_CLASS_COLOR = True
-
-OVERWRITE_SEGMENT = False
-OVERWRITE_OVERLAY = False
-
-### Extraction setting  
+from dataclasses import dataclass, field 
+from pathlib import Path 
 
 
+# ============================================================
+# Run setting (All True for Full Pipeline)
+# ============================================================
 
-### (Optional) Statistic setting  
-# if RUN_STATISTIC is True, we can use detailed settings following: 
+@dataclass(frozen=True)
+class RunConfig:
+    run_hest_download: bool = True 
+    run_segment: bool = True 
+    run_overlay: bool = True 
+    run_radiomics_extraction: bool = True 
+    run_statistics: bool = True 
 
+
+# ============================================================
+# HEST download setting 
+# ============================================================
+
+@dataclass(frozen=True)
+class DownloadConfig: 
+    root: Path = Path("./data")
+    subroot: str = "hest"
+
+    oncotrees: list[str] = field(default_factory=lambda: [
+        "IDC", 
+        "SKCM",
+        "LUAD", 
+        "PAAD", 
+        "COAD", 
+    ])
+
+    required_dirs: list[str] = field(default_factory=lambda: [
+        "patches", 
+        "st", 
+    ])
+
+    optional_dirs: list[str] = field(default_factory=lambda: [
+        "metadata",
+        "patches_vis",
+        "thumbnails",
+        "spatial_plots",
+    ])
+
+    technologies: list[str] = field(default_factory=lambda: [
+        # "Spatial Transcriptomics" | "Visium HD" | "Visium" | "Xenium"
+        "Xenium", 
+    ])
+
+    @property 
+    def download_dir(self) -> Path:
+        return self.root / self.subroot
+
+    
+# ============================================================
+# Cell segmentation setting 
+# ============================================================
+
+@dataclass(frozen=True)
+class CellSegmentConfig:
+    model_name: str = "CellViT-SAM-H-x20.pth"
+    model_root: Path = Path("./models")
+
+    device: str = "cuda:0"
+    batch_size: int = 8 
+    num_workers: int = 0 
+
+    use_class_color: bool = True 
+
+    overwrite_segment: bool = False 
+    overwrite_overlay: bool = False 
+
+    @property 
+    def model_path(self) -> Path:
+        return self.model_root / self.model_name 
+    
+
+# ============================================================
+# Radiomics extraction setting 
+# ============================================================
+
+@dataclass(frozen=True)
+class RadiomicsConfig: 
+    mask_source: str = "cellseg" # "threshold" | "cellseg"
+    save_patches: bool = False 
+    num_workers: int = 0 
+
+    output_dirname: str = "radiomics_features"
+    segment_dirname: str = "cellseg"
+    patch_dirname: str = "patches"
+
+    overwrite: bool = False 
+
+
+# ============================================================
+# Statistics setting
+# ============================================================
+
+@dataclass(frozen=True)
+class StatisticsConfig: 
+    output_dirname: str = "statistics"
+    overwrite: bool = True 
+
+
+# ============================================================
+# Whole pipeline config 
+# ============================================================
+
+@dataclass(frozen=True)
+class PipelineConfig:
+    run: RunConfig = field(default_factory=RunConfig)
+    download: DownloadConfig = field(default_factory=DownloadConfig)
+    cellseg: CellSegmentConfig = field(default_factory=CellSegmentConfig)
+    radiomics: RadiomicsConfig = field(default_factory=RadiomicsConfig)
+    statistics: StatisticsConfig = field(default_factory=StatisticsConfig)
+
+
+CONFIG = PipelineConfig()
+
+
+# ============================================================
 
