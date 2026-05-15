@@ -11,15 +11,8 @@ import scanpy as sc
 from dotenv import load_dotenv
 from huggingface_hub import HfApi, login, snapshot_download
 
-from hestradiomics._utils import ensure_dir 
-from hestradiomics.config import (
-    DOWNLOAD_ROOT, 
-    DOWNLOAD_SUBROOT, 
-    DOWNLOAD_ONCOTREE, 
-    DOWNLOAD_REQUIRED,
-    DOWNLOAD_OPTIONAL, 
-    DOWNLOAD_TECH, 
-)
+from hestradiomics.utils.io import ensure_dir
+from hestradiomics.config import CONFIG, DownloadConfig
 
 
 # ============================================================
@@ -37,9 +30,9 @@ def huggingface_checkin() -> None:
 
     try:
         user_info = HfApi().whoami()
-        print("Current Hugging Face Account: %s", user_info["name"])
+        print(f"Current Hugging Face Account: {user_info['name']}")
     except Exception as e:
-        print("Failed to check Hugging Face account: %s", e)
+        print(f"Failed to check Hugging Face account: {e}")
 
 
 # ============================================================
@@ -63,21 +56,21 @@ def build_hest_allow_patterns(
 
 
 def download_hest_by_oncotree(
-    download_dir: str | Path,
+    download_cfg: DownloadConfig,
     metadata_uri: str = "hf://datasets/MahmoodLab/hest/HEST_v1_3_0.csv",
 ) -> None:
-    download_dir = Path(download_dir)
+    download_dir = download_cfg.download_dir
 
     print("Loading HEST metadata:", metadata_uri)
     meta_df = pd.read_csv(metadata_uri)
 
     meta_df = meta_df[
         (meta_df["species"] == "Homo sapiens")
-        & (meta_df["oncotree_code"].isin(DOWNLOAD_ONCOTREE))
-        & (meta_df["st_technology"].isin(DOWNLOAD_TECH))
+        & (meta_df["oncotree_code"].isin(download_cfg.oncotrees))
+        & (meta_df["st_technology"].isin(download_cfg.technologies))
     ]
 
-    for oncotree_code in DOWNLOAD_ONCOTREE:
+    for oncotree_code in download_cfg.oncotrees:
         oncotree_df = meta_df[meta_df["oncotree_code"] == oncotree_code]
 
         if oncotree_df.empty:
@@ -88,16 +81,16 @@ def download_hest_by_oncotree(
 
         allow_patterns = build_hest_allow_patterns(
             sample_ids=sample_ids,
-            required_dirs=DOWNLOAD_REQUIRED,
-            allowed_dirs=DOWNLOAD_OPTIONAL,
+            required_dirs=download_cfg.required_dirs,
+            allowed_dirs=download_cfg.optional_dirs,
         )
 
         oncotree_dir = ensure_dir(download_dir / oncotree_code)
 
         print(f"\nStart downloading HEST | oncotree={oncotree_code}")
-        print("download_dir:", oncotree_dir)
-        print("num_samples:", len(sample_ids))
-        print("sample_ids:", sample_ids)
+        print(f"download_dir: {oncotree_dir}")
+        print(f"num_samples: {len(sample_ids)}")
+        print(f"sample_ids: {sample_ids}")
 
         snapshot_download(
             repo_id="MahmoodLab/hest",
@@ -109,15 +102,9 @@ def download_hest_by_oncotree(
         print(f"Completed downloading HEST | oncotree={oncotree_code}")
 
 
-def run_download(download_root: str | Path) -> None:
-    download_root = Path(download_root)
-
+def run_download(download_cfg: DownloadConfig) -> None:
     huggingface_checkin()
-
-    download_hest_by_oncotree(
-        download_dir=download_root / DOWNLOAD_SUBROOT,
-    )
-
+    download_hest_by_oncotree(download_cfg)
     print("All download tasks completed")
 
 
@@ -163,7 +150,7 @@ def get_common_genes(
         if "BLANK" not in gene and "Control" not in gene
     ]
 
-    print("Found %d common genes", len(common_genes))
+    print(f"Found {len(common_genes)} common genes")
     return list(common_genes)
 
 
@@ -187,7 +174,6 @@ def select_top_k_genes(
 
     if criteria == "mean":
         genes = expression_df.mean(axis=0).nlargest(k).index.tolist()
-
     else:
         stacked_adata = sc.AnnData(expression_df.astype(np.float32))
         sc.pp.filter_genes(stacked_adata, min_cells=0)
@@ -198,7 +184,7 @@ def select_top_k_genes(
             stacked_adata.var["highly_variable"]
         ][:k].tolist()
 
-    print("Selected %d genes by %s", len(genes), criteria)
+    print(f"Selected {len(genes)} genes by {criteria}")
     return genes
 
 
@@ -221,18 +207,15 @@ def load_all_h5ad_from_dir(
 
 
 def run_gene_extraction(
-    download_root: str | Path,
-    oncotree_codes: Sequence[str] = DOWNLOAD_ONCOTREE,
+    download_cfg: DownloadConfig,
     k_values: Sequence[int] = (50, 100, 250),
     criteria_values: Sequence[str] = ("var",),
     min_cells_pct: float = 0.1,
 ) -> None:
-    download_root = Path(download_root)
-
     summary = []
 
-    for oncotree_code in oncotree_codes:
-        oncotree_dir = download_root / DOWNLOAD_SUBROOT / oncotree_code
+    for oncotree_code in download_cfg.oncotrees:
+        oncotree_dir = download_cfg.download_dir / oncotree_code
         st_dir = oncotree_dir / "st"
         save_dir = ensure_dir(oncotree_dir / "genes")
 
@@ -248,7 +231,11 @@ def run_gene_extraction(
 
         for criteria in criteria_values:
             for k in k_values:
-                print(f"Extracting genes | oncotree={oncotree_code} | criteria={criteria} | k={k}")
+                print(
+                    f"Extracting genes | "
+                    f"oncotree={oncotree_code} | "
+                    f"criteria={criteria} | k={k}"
+                )
 
                 genes = select_top_k_genes(
                     adata_list=adata_list,
@@ -273,20 +260,18 @@ def run_gene_extraction(
 
                 print(f"Saved gene list: {save_path}")
 
-    save_json(download_root / DOWNLOAD_SUBROOT / "gene_extraction_summary.json", summary)
+    save_json(download_cfg.download_dir / "gene_extraction_summary.json", summary)
     print("Gene extraction finished")
 
 
 # ============================================================
 
-
 if __name__ == "__main__":
-    run_download(
-        download_root=DOWNLOAD_ROOT,
-    )
+    cfg = CONFIG
 
-    run_gene_extraction(
-        download_root=DOWNLOAD_ROOT,
-    )
+    if cfg.run.run_hest_download:
+        run_download(cfg.download)
+
+    run_gene_extraction(cfg.download)
 
     print("Pipeline finished successfully")
