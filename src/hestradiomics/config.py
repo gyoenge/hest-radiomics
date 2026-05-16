@@ -26,10 +26,10 @@ class DownloadConfig:
 
     oncotrees: tuple[str] = field(default_factory=lambda: [
         "IDC", 
-        "SKCM",
-        "LUAD", 
-        "PAAD", 
-        "COAD", 
+        # "SKCM",
+        # "LUAD", 
+        # "PAAD", 
+        # "COAD", 
     ])
 
     required_dirs: tuple[str] = field(default_factory=lambda: [
@@ -47,6 +47,7 @@ class DownloadConfig:
     technologies: tuple[str] = field(default_factory=lambda: [
         # "Spatial Transcriptomics" | "Visium HD" | "Visium" | "Xenium"
         "Xenium", 
+        "Visium", 
     ])
 
     @property 
@@ -84,14 +85,15 @@ class CellSegmentConfig:
 @dataclass(frozen=True)
 class RadiomicsConfig: 
     mask_source: str = "cellseg" # "threshold" | "cellseg"
-    save_patches: bool = False 
+
     num_workers: int = 0 
 
-    output_dirname: str = "radiomics_features"
+    output_dirname: str = "radiomics"
     segment_dirname: str = "cellseg"
     patch_dirname: str = "patches"
 
     overwrite: bool = False 
+    save_patches: bool = False 
 
 
 # ============================================================
