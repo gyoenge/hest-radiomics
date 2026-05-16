@@ -86,11 +86,11 @@ class CellSegmentConfig:
 class RadiomicsConfig: 
     mask_source: str = "cellseg" # "threshold" | "cellseg"
 
-    num_workers: int = 0 
-
     output_dirname: str = "radiomics"
-    segment_dirname: str = "cellseg"
+    segment_dirname: str = "segment"
     patch_dirname: str = "patches"
+
+    num_workers: int = 0 
 
     overwrite: bool = False 
     save_patches: bool = False 
