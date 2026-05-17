@@ -163,7 +163,10 @@ def extract_radiomics(
 
             for i in tqdm(
                 patch_indices,
-                desc=f"[Processing patches] {sample_id}",
+                desc=f"[Patches] {sample_id}",
+                dynamic_ncols=True,
+                smoothing=0.05,
+                unit="patch",
             ):
                 try:
                     row = process_single_patch(
@@ -192,7 +195,7 @@ def extract_radiomics(
         }
 
     num_workers = min(num_workers, os.cpu_count() or 1)
-    chunks = split_indices(patch_indices, num_workers * 64)
+    chunks = split_indices(patch_indices, num_workers * 4)
     rows = []
 
     with ProcessPoolExecutor(max_workers=num_workers) as executor:
@@ -217,19 +220,32 @@ def extract_radiomics(
 
         with tqdm(
             total=len(chunks),
-            desc=f"[Processing chunks] {sample_id}",
+            desc=f"[Chunks] {sample_id}",
             position=0,
+            leave=True,
+            dynamic_ncols=True,
         ) as chunk_pbar, tqdm(
             total=total_num_patches,
-            desc=f"[Processing patches] {sample_id}",
+            desc=f"[Patches] {sample_id}",
             position=1,
+            leave=True,
+            dynamic_ncols=True,
+            smoothing=0.05,
+            unit="patch",
         ) as patch_pbar:
             for future in as_completed(future_to_chunk_size):
                 chunk_rows = future.result()
                 rows.extend(chunk_rows)
 
                 chunk_pbar.update(1)
-                patch_pbar.update(future_to_chunk_size[future])
+
+                processed = future_to_chunk_size[future]
+                patch_pbar.update(processed)
+
+                patch_pbar.set_postfix(
+                    workers=num_workers,
+                    rows=len(rows),
+                )
 
     rows.sort(key=lambda x: x["patch_idx"])
 
@@ -287,7 +303,7 @@ def save_radiomics_result_as_h5ad(
 
     if "barcode" in obs.columns:
         obs["barcode"] = obs["barcode"].astype(str)
-        
+
     if "patch_idx" in obs.columns:
         obs.index = [
             f"{save_path.stem}_{int(patch_idx)}"
