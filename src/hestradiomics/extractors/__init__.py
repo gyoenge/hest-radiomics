@@ -2,9 +2,6 @@ from ._intensity_texture import (
     extract_patch_level_radiomics,
     extract_cellseg_level_radiomics,
 )
-# from .builders import (
-#     _get_worker_shape2d_extractor,
-# )
 from ._shape import (
     extract_morphology_aggregates,
 )

@@ -18,8 +18,8 @@ from hestradiomics.extractors import (
 )
 from hestradiomics.extractors.constants import *
 from hestradiomics.extractors.builders import (
-    _get_worker_radiomics_extractor,
-    _get_worker_shape2d_extractor,
+    get_worker_radiomics_extractor,
+    get_worker_shape2d_extractor,
     build_radiomics_extractor,
     build_shape2d_extractor,
 )
@@ -53,13 +53,13 @@ def process_patch_chunk(
 ):
     rows = []
 
-    extractor = _get_worker_radiomics_extractor(
+    extractor = get_worker_radiomics_extractor(
         classes=classes,
         filters=filters,
         label=label,
         image_type_settings=image_type_settings,
     )
-    shape_extractor = _get_worker_shape2d_extractor(label)
+    shape_extractor = get_worker_shape2d_extractor(label)
 
     cellseg_df = load_cellseg_dataframe(cellseg_path) if mask_source == "cellseg" else None
 

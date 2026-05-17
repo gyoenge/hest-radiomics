@@ -203,7 +203,7 @@ def build_shape2d_extractor(label=EXTRACTOR_DEFAULT_LABEL):
     return extractor
 
 
-def _get_worker_radiomics_extractor(
+def get_worker_radiomics_extractor(
     classes,
     filters,
     label,
@@ -244,7 +244,7 @@ def _get_worker_radiomics_extractor(
     return _WORKER_EXTRACTOR_CACHE[key]
 
 
-def _get_worker_shape2d_extractor(label):
+def get_worker_shape2d_extractor(label):
     """
     Retrieve or create a cached Shape2D extractor for the current worker.
 
