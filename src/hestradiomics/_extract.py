@@ -14,14 +14,12 @@ import pandas as pd
 from tqdm import tqdm
 
 from hestradiomics.extractors import (
-    process_single_patch,
-)
-from hestradiomics.extractors.constants import *
-from hestradiomics.extractors.builders import (
+    EXTRACTOR_DEFAULT_LABEL, 
     get_worker_radiomics_extractor,
     get_worker_shape2d_extractor,
     build_radiomics_extractor,
     build_shape2d_extractor,
+    process_single_patch,
 )
 from hestradiomics.utils import (
     get_barcodes_key,
