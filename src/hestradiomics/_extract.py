@@ -9,24 +9,26 @@ from typing import Optional
 
 import anndata as ad
 import h5py
-import numpy as np 
+import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
 from hestradiomics.extractors import (
-    EXTRACTOR_DEFAULT_LABEL, 
+    EXTRACTOR_DEFAULT_LABEL,
     get_worker_radiomics_extractor,
     get_worker_shape2d_extractor,
     build_radiomics_extractor,
     build_shape2d_extractor,
     process_single_patch,
 )
+
 from hestradiomics.utils import (
     get_barcodes_key,
     get_coords_key,
     get_img_key,
     load_cellseg_dataframe,
     make_error_row,
+    filter_sample_ids,
 )
 
 logging.getLogger("radiomics").setLevel(logging.ERROR)
@@ -57,9 +59,14 @@ def process_patch_chunk(
         label=label,
         image_type_settings=image_type_settings,
     )
+
     shape_extractor = get_worker_shape2d_extractor(label)
 
-    cellseg_df = load_cellseg_dataframe(cellseg_path) if mask_source == "cellseg" else None
+    cellseg_df = (
+        load_cellseg_dataframe(cellseg_path)
+        if mask_source == "cellseg"
+        else None
+    )
 
     with h5py.File(h5_path, "r") as f:
         img_key = get_img_key(f)
@@ -84,6 +91,7 @@ def process_patch_chunk(
                     shape_extractor=shape_extractor,
                 )
                 rows.append(row)
+
             except Exception as e:
                 rows.append(make_error_row(i, str(e)))
 
@@ -92,7 +100,10 @@ def process_patch_chunk(
 
 def split_indices(indices, num_chunks):
     chunk_size = math.ceil(len(indices) / num_chunks)
-    return [indices[i:i + chunk_size] for i in range(0, len(indices), chunk_size)]
+    return [
+        indices[i:i + chunk_size]
+        for i in range(0, len(indices), chunk_size)
+    ]
 
 
 def extract_radiomics(
@@ -116,6 +127,7 @@ def extract_radiomics(
       - threshold: one row per patch, patch radiomics only
       - cellseg: one row per patch, patch + cellseg + morphology + distribution
     """
+
     with h5py.File(h5_path, "r") as f:
         img_key = get_img_key(f)
         total_num_patches = len(f[img_key])
@@ -137,14 +149,22 @@ def extract_radiomics(
             )
 
         shape_extractor = build_shape2d_extractor(label=label)
-        cellseg_df = load_cellseg_dataframe(cellseg_path) if mask_source == "cellseg" else None
+
+        cellseg_df = (
+            load_cellseg_dataframe(cellseg_path)
+            if mask_source == "cellseg"
+            else None
+        )
 
         with h5py.File(h5_path, "r") as f:
             img_key = get_img_key(f)
             coords_key = get_coords_key(f)
             barcodes_key = get_barcodes_key(f)
 
-            for i in tqdm(patch_indices, desc=f"[Processing patches] {sample_id}"):
+            for i in tqdm(
+                patch_indices,
+                desc=f"[Processing patches] {sample_id}",
+            ):
                 try:
                     row = process_single_patch(
                         f=f,
@@ -162,6 +182,7 @@ def extract_radiomics(
                         shape_extractor=shape_extractor,
                     )
                     rows.append(row)
+
                 except Exception as e:
                     rows.append(make_error_row(i, str(e)))
 
@@ -194,8 +215,14 @@ def extract_radiomics(
             )
             future_to_chunk_size[future] = len(chunk)
 
-        with tqdm(total=len(chunks), desc=f"[Processing chunks] {sample_id}", position=0) as chunk_pbar, tqdm(
-            total=total_num_patches, desc=f"[Processing patches] {sample_id}", position=1
+        with tqdm(
+            total=len(chunks),
+            desc=f"[Processing chunks] {sample_id}",
+            position=0,
+        ) as chunk_pbar, tqdm(
+            total=total_num_patches,
+            desc=f"[Processing patches] {sample_id}",
+            position=1,
         ) as patch_pbar:
             for future in as_completed(future_to_chunk_size):
                 chunk_rows = future.result()
@@ -216,7 +243,10 @@ def extract_radiomics(
 # save
 # ------------------------------------------------------------------------------
 
-def save_radiomics_result_as_h5ad(result: dict, save_path: str | Path) -> None:
+def save_radiomics_result_as_h5ad(
+    result: dict,
+    save_path: str | Path,
+) -> None:
     save_path = Path(save_path)
     save_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -236,15 +266,24 @@ def save_radiomics_result_as_h5ad(result: dict, save_path: str | Path) -> None:
         "n_cells_total",
     ]
 
-    obs_cols = [c for c in obs_cols if c in df.columns]
+    obs_cols = [
+        c
+        for c in obs_cols
+        if c in df.columns
+    ]
 
     feature_cols = [
-        c for c in df.columns
+        c
+        for c in df.columns
         if c not in obs_cols
         and pd.api.types.is_numeric_dtype(df[c])
     ]
 
-    obs = df[obs_cols].copy() if obs_cols else pd.DataFrame(index=df.index)
+    obs = (
+        df[obs_cols].copy()
+        if obs_cols
+        else pd.DataFrame(index=df.index)
+    )
 
     if "barcode" in obs.columns:
         obs.index = obs["barcode"].astype(str)
@@ -263,10 +302,13 @@ def save_radiomics_result_as_h5ad(result: dict, save_path: str | Path) -> None:
         adata.obsm["spatial"] = df[["x", "y"]].to_numpy()
 
     adata.uns["total_num_patches"] = result.get("total_num_patches")
-    
+
     adata.write_h5ad(save_path)
 
-    print(f"[SAVE] {save_path} | rows={adata.n_obs}, features={adata.n_vars}")
+    print(
+        f"[SAVE] {save_path} | "
+        f"rows={adata.n_obs}, features={adata.n_vars}"
+    )
 
 
 # ------------------------------------------------------------------------------
@@ -276,6 +318,7 @@ def save_radiomics_result_as_h5ad(result: dict, save_path: str | Path) -> None:
 def run_radiomics_extraction_for_oncotree(
     oncotree: str,
     data_root: str | Path,
+    sample_ids: Optional[tuple[str, ...]] = None,
     patch_dirname: str = "patches",
     cellseg_dirname: str = "cellseg",
     output_dirname: str = "radiomics_features",
@@ -300,6 +343,7 @@ def run_radiomics_extraction_for_oncotree(
         radiomics_features/
           sample1.h5ad
     """
+
     data_root = Path(data_root)
     oncotree_root = data_root / oncotree
 
@@ -319,11 +363,37 @@ def run_radiomics_extraction_for_oncotree(
         print(f"[SKIP] No h5 files found: {patch_dir}")
         return
 
+    all_sample_ids = [
+        path.stem
+        for path in h5_paths
+    ]
+
+    target_sample_ids = filter_sample_ids(
+        all_sample_ids=all_sample_ids,
+        selected_sample_ids=sample_ids,
+    )
+
+    if not target_sample_ids:
+        print(
+            f"[SKIP] No selected samples found for {oncotree} | "
+            f"selected={sample_ids}"
+        )
+        return
+
+    target_sample_id_set = set(target_sample_ids)
+
+    h5_paths = [
+        path
+        for path in h5_paths
+        if path.stem in target_sample_id_set
+    ]
+
     print("=" * 80)
     print(f"[ONCOTREE] {oncotree}")
     print(f"[PATCH DIR] {patch_dir}")
     print(f"[OUTPUT DIR] {output_dir}")
-    print(f"[NUM SAMPLES] {len(h5_paths)}")
+    print(f"[NUM SAMPLES] {len(h5_paths)} / {len(all_sample_ids)}")
+    print(f"[SAMPLE IDS] {target_sample_ids}")
     print("=" * 80)
 
     for h5_path in h5_paths:
@@ -335,6 +405,7 @@ def run_radiomics_extraction_for_oncotree(
             continue
 
         cellseg_path = None
+
         if mask_source == "cellseg":
             cellseg_path = cellseg_dir / f"{sample_id}.h5"
 
@@ -355,10 +426,17 @@ def run_radiomics_extraction_for_oncotree(
             filters=filters,
             image_type_settings=image_type_settings,
             mask_source=mask_source,
-            cellseg_path=str(cellseg_path) if cellseg_path is not None else None,
+            cellseg_path=(
+                str(cellseg_path)
+                if cellseg_path is not None
+                else None
+            ),
         )
 
-        save_radiomics_result_as_h5ad(result, save_path)
+        save_radiomics_result_as_h5ad(
+            result=result,
+            save_path=save_path,
+        )
 
 
 def run_radiomics_extraction_from_config(config) -> None:
@@ -367,11 +445,14 @@ def run_radiomics_extraction_from_config(config) -> None:
       config.download.download_dir
       config.download.oncotrees
       config.radiomics.*
+      config.sample_ids
     """
+
     for oncotree in config.download.oncotrees:
         run_radiomics_extraction_for_oncotree(
             oncotree=oncotree,
             data_root=config.download.download_dir,
+            sample_ids=config.sample_ids,
             patch_dirname=config.radiomics.patch_dirname,
             cellseg_dirname=config.radiomics.segment_dirname,
             output_dirname=config.radiomics.output_dirname,
@@ -382,7 +463,7 @@ def run_radiomics_extraction_from_config(config) -> None:
         )
 
 
-if __name__ == "__main__": 
+if __name__ == "__main__":
     from hestradiomics.config import CONFIG
-    run_radiomics_extraction_from_config(config=CONFIG)
 
+    run_radiomics_extraction_from_config(config=CONFIG)
