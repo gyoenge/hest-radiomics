@@ -286,9 +286,20 @@ def save_radiomics_result_as_h5ad(
     )
 
     if "barcode" in obs.columns:
-        obs.index = obs["barcode"].astype(str)
+        obs["barcode"] = obs["barcode"].astype(str)
+        
+    if "patch_idx" in obs.columns:
+        obs.index = [
+            f"{save_path.stem}_{int(patch_idx)}"
+            for patch_idx in obs["patch_idx"]
+        ]
     else:
-        obs.index = df.index.astype(str)
+        obs.index = [
+            f"{save_path.stem}_{i}"
+            for i in range(len(obs))
+        ]
+
+    obs.index.name = "obs_id"
 
     X = df[feature_cols].astype(np.float32).to_numpy()
 
