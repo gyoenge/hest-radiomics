@@ -1237,7 +1237,7 @@ if __name__ == "__main__":
     )
 
     segment_paths: List[str] = []
-    overlay_dirs: List[str] = []
+    # overlay_dirs: List[str] = []
 
     if cfg.run.run_segment:
         segment_paths = segment_all_oncotrees_from_config(
@@ -1246,14 +1246,14 @@ if __name__ == "__main__":
             sample_ids=cfg.sample_ids,
         )
 
-    if cfg.run.run_overlay:
-        overlay_dirs = save_overlays_all_oncotrees_from_config(
-            download_cfg=cfg.download,
-            cellseg_cfg=cfg.cellseg,
-            sample_ids=cfg.sample_ids,
-        )
+    # if cfg.run.run_overlay:
+    #     overlay_dirs = save_overlays_all_oncotrees_from_config(
+    #         download_cfg=cfg.download,
+    #         cellseg_cfg=cfg.cellseg,
+    #         sample_ids=cfg.sample_ids,
+    #     )
 
     print("[INFO] all done")
     print(f"[INFO] segmented samples: {len(segment_paths)}")
-    print(f"[INFO] overlay dirs: {len(overlay_dirs)}")
+    # print(f"[INFO] overlay dirs: {len(overlay_dirs)}")
     
