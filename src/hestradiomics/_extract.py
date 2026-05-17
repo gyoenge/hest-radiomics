@@ -81,11 +81,8 @@ def process_patch_chunk(
                     coords_key=coords_key,
                     barcodes_key=barcodes_key,
                     i=i,
-                    output_dir=output_dir,
-                    sample_id=sample_id,
                     extractor=extractor,
                     label=label,
-                    save_patches=save_patches,
                     mask_source=mask_source,
                     cellseg_df=cellseg_df,
                     shape_extractor=shape_extractor,
@@ -140,14 +137,6 @@ def extract_radiomics(
     if num_workers is None or num_workers <= 1:
         rows = []
 
-        if extractor is None:
-            extractor = build_radiomics_extractor(
-                classes=classes,
-                filters=filters,
-                label=label,
-                image_type_settings=image_type_settings,
-            )
-
         print(f"[INIT] Building radiomics extractor: {sample_id}", flush=True)
 
         if extractor is None:
@@ -193,11 +182,8 @@ def extract_radiomics(
                         coords_key=coords_key,
                         barcodes_key=barcodes_key,
                         i=i,
-                        output_dir=output_dir,
-                        sample_id=sample_id,
                         extractor=extractor,
                         label=label,
-                        save_patches=save_patches,
                         mask_source=mask_source,
                         cellseg_df=cellseg_df,
                         shape_extractor=shape_extractor,
