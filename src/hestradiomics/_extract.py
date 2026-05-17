@@ -62,11 +62,9 @@ def process_patch_chunk(
 
     shape_extractor = get_worker_shape2d_extractor(label)
 
-    cellseg_df = (
-        load_cellseg_dataframe(cellseg_path)
-        if mask_source == "cellseg"
-        else None
-    )
+    print(f"[WORKER INIT] loading cellseg: {sample_id} | pid={os.getpid()}", flush=True)
+    cellseg_df = load_cellseg_dataframe(cellseg_path)
+    print(f"[WORKER INIT] loaded cellseg: {sample_id} | pid={os.getpid()} | rows={len(cellseg_df)}", flush=True)
 
     with h5py.File(h5_path, "r") as f:
         img_key = get_img_key(f)
