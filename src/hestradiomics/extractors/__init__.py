@@ -16,6 +16,7 @@ from .builders import (
 )
 from .patch_processor import (
     process_single_patch, 
+    get_patch_cellseg, 
 )
 from .postprocess import (
     build_processed_feature_df, 
@@ -37,4 +38,6 @@ __all__ = [
     "build_shape2d_extractor",
     "process_single_patch", 
     "build_processed_feature_df",
+    # _visualize 
+    "get_patch_cellseg", 
 ]
