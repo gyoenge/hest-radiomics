@@ -14,6 +14,7 @@ from hestradiomics.extractors import (
     extract_cellseg_level_radiomics,
     extract_morphology_aggregates,
     extract_cell_type_distribution,
+    get_worker_shape2d_extractor, 
 )
 from hestradiomics.extractors.constants import *
 from hestradiomics.utils import (
@@ -105,16 +106,14 @@ def process_threshold_patch(
     output_dir: str,
     sample_id: str,
     label: int,
-    save_patches: bool,
 ) -> Dict[str, Any]:
     """
     Process a patch using threshold-based foreground masking.
 
     Workflow:
         1. Build binary threshold mask
-        2. Save visualization masks (optional)
-        3. Skip if mask area is too small
-        4. Extract patch-level radiomics features
+        2. Skip if mask area is too small
+        3. Extract patch-level radiomics features
 
     Args:
         patch:
@@ -135,9 +134,6 @@ def process_threshold_patch(
         label:
             Foreground mask label value.
 
-        save_patches:
-            Whether to save visualization images.
-
     Returns:
         Updated feature dictionary.
     """
@@ -152,17 +148,6 @@ def process_threshold_patch(
     row[PATCH_MASK_AREA_COLUMN] = int(
         np.count_nonzero(patch_mask > 0)
     )
-
-    # Save mask visualization if enabled
-    if save_patches:
-        row[MASK_PATH_COLUMN] = save_region_mask_images(
-            color_patch=patch.color_patch,
-            gray_patch=patch.gray_patch,
-            mask_patch=patch_mask,
-            output_dir=output_dir,
-            sample_id=sample_id,
-            mask_filename=f"{patch.base_filename}{THRESHOLD_MASK_SUFFIX}",
-        )
 
     # Skip patch if foreground area is too small
     if row[PATCH_MASK_AREA_COLUMN] < PATCH_MASK_AREA_MIN_THRESHOLD:
@@ -194,7 +179,6 @@ def process_cellseg_patch(
     output_dir: str,
     sample_id: str,
     label: int,
-    save_patches: bool,
     cellseg_df: gpd.GeoDataFrame,
 ) -> Dict[str, Any]:
     """
@@ -203,8 +187,7 @@ def process_cellseg_patch(
     Workflow:
         1. Load patch-specific cell polygons
         2. Rasterize polygons into merged mask
-        3. Save visualization masks
-        4. Extract:
+        3. Extract:
             - Patch-level radiomics
             - Cellseg-level radiomics
             - Morphology aggregates
@@ -231,9 +214,6 @@ def process_cellseg_patch(
 
         label:
             Mask label value.
-
-        save_patches:
-            Whether to save visualization images.
 
         cellseg_df:
             Full segmentation dataframe.
@@ -274,63 +254,6 @@ def process_cellseg_patch(
     row[CELLSEG_MASK_AREA_COLUMN] = int(
         np.count_nonzero(merged_mask > 0)
     )
-
-    # Save merged segmentation mask visualization
-    if save_patches:
-        row[MASK_PATH_COLUMN] = save_region_mask_images(
-            color_patch=patch.color_patch,
-            gray_patch=patch.gray_patch,
-            mask_patch=merged_mask,
-            output_dir=output_dir,
-            sample_id=sample_id,
-            mask_filename=f"{patch.base_filename}{CELLSEG_ALL_MASK_SUFFIX}",
-        )
-
-    # --------------------------------------------------------------------------
-    # Save class-specific masks
-    # --------------------------------------------------------------------------
-    if save_patches:
-
-        for class_name, sub in patch_cellseg.groupby(CELL_CLASS_COLUMN):
-
-            if len(sub) == 0:
-                continue
-
-            # Rasterize only cells of this class
-            mask_cls = rasterize_geometries_to_mask(
-                sub.geometry.tolist(),
-                image_shape=patch.gray_patch.shape,
-                label=label,
-            )
-
-            # Save visualization
-            save_region_mask_images(
-                color_patch=patch.color_patch,
-                gray_patch=patch.gray_patch,
-                mask_patch=mask_cls,
-                output_dir=output_dir,
-                sample_id=sample_id,
-                mask_filename=f"{patch.base_filename}__cellseg_{class_name}",
-            )
-
-    # --------------------------------------------------------------------------
-    # Save threshold mask for comparison/debugging
-    # --------------------------------------------------------------------------
-    if save_patches:
-
-        threshold_mask = build_threshold_mask(
-            patch.gray_patch,
-            label=label,
-        )
-
-        save_region_mask_images(
-            color_patch=patch.color_patch,
-            gray_patch=patch.gray_patch,
-            mask_patch=threshold_mask,
-            output_dir=output_dir,
-            sample_id=sample_id,
-            mask_filename=f"{patch.base_filename}{THRESHOLD_MASK_SUFFIX}",
-        )
 
     # --------------------------------------------------------------------------
     # Extract patch-level radiomics
@@ -397,7 +320,6 @@ def process_single_patch(
     sample_id: str,
     extractor,
     label=EXTRACTOR_DEFAULT_LABEL,
-    save_patches=True,
     mask_source: str = MASK_SOURCE_THRESHOLD,
     cellseg_df: Optional[gpd.GeoDataFrame] = None,
     shape_extractor=None,
@@ -441,9 +363,6 @@ def process_single_patch(
         label:
             Mask label value.
 
-        save_patches:
-            Whether to save visualization images.
-
         mask_source:
             Mask generation strategy.
             Supported:
@@ -474,7 +393,6 @@ def process_single_patch(
         patch=patch,
         output_dir=output_dir,
         sample_id=sample_id,
-        save_patches=save_patches,
     )
 
     # --------------------------------------------------------------------------
@@ -489,7 +407,6 @@ def process_single_patch(
             output_dir=output_dir,
             sample_id=sample_id,
             label=label,
-            save_patches=save_patches,
         )
 
     # --------------------------------------------------------------------------
@@ -506,7 +423,7 @@ def process_single_patch(
 
         # Lazily initialize Shape2D extractor
         if shape_extractor is None:
-            shape_extractor = _get_worker_shape2d_extractor(label)
+            shape_extractor = get_worker_shape2d_extractor(label)
 
         return process_cellseg_patch(
             patch=patch,
@@ -516,7 +433,6 @@ def process_single_patch(
             output_dir=output_dir,
             sample_id=sample_id,
             label=label,
-            save_patches=save_patches,
             cellseg_df=cellseg_df,
         )
 
