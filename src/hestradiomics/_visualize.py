@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -18,16 +17,17 @@ from hestradiomics.utils import (
     get_coords_key,
     get_barcodes_key,
     load_cellseg_dataframe,
+    filter_sample_ids,
 )
 from hestradiomics.extractors.constants import (
-    EXTRACTOR_DEFAULT_LABEL, 
-    MASK_SOURCE_THRESHOLD, 
-    MASK_PATH_COLUMN, 
-    THRESHOLD_MASK_SUFFIX, 
-    MASK_SOURCE_CELLSEG, 
-    CELLSEG_ALL_MASK_SUFFIX, 
-    CELL_CLASS_COLUMN, 
-    PATCH_IDX_COLUMN, 
+    EXTRACTOR_DEFAULT_LABEL,
+    MASK_SOURCE_THRESHOLD,
+    MASK_PATH_COLUMN,
+    THRESHOLD_MASK_SUFFIX,
+    MASK_SOURCE_CELLSEG,
+    CELLSEG_ALL_MASK_SUFFIX,
+    CELL_CLASS_COLUMN,
+    PATCH_IDX_COLUMN,
 )
 from hestradiomics.extractors import (
     get_patch_cellseg,
@@ -304,6 +304,7 @@ def save_segment_overlays_from_h5(
 def run_visualization_for_oncotree(
     oncotree: str,
     data_root: str | Path,
+    sample_ids: Optional[tuple[str, ...]] = None,
     patch_dirname: str = "patches",
     cellseg_dirname: str = "cellseg",
     patch_vis_dirname: str = "patch_vis",
@@ -323,7 +324,47 @@ def run_visualization_for_oncotree(
     patch_vis_root = oncotree_root / patch_vis_dirname
     overlay_root = oncotree_root / overlay_dirname
 
+    if not patch_dir.exists():
+        print(f"[SKIP] Patch dir not found: {patch_dir}")
+        return
+
     h5_paths = sorted(patch_dir.glob("*.h5"))
+
+    if not h5_paths:
+        print(f"[SKIP] No h5 files found: {patch_dir}")
+        return
+
+    all_sample_ids = [path.stem for path in h5_paths]
+
+    target_sample_ids = filter_sample_ids(
+        all_sample_ids=all_sample_ids,
+        selected_sample_ids=sample_ids,
+    )
+
+    if not target_sample_ids:
+        print(
+            f"[SKIP] No selected samples found for {oncotree} | "
+            f"selected={sample_ids}"
+        )
+        return
+
+    target_sample_id_set = set(target_sample_ids)
+
+    h5_paths = [
+        path
+        for path in h5_paths
+        if path.stem in target_sample_id_set
+    ]
+
+    print("=" * 80)
+    print(f"[VISUALIZE] oncotree={oncotree}")
+    print(f"[PATCH DIR] {patch_dir}")
+    print(f"[CELLSEG DIR] {cellseg_dir}")
+    print(f"[PATCH VIS ROOT] {patch_vis_root}")
+    print(f"[OVERLAY ROOT] {overlay_root}")
+    print(f"[NUM SAMPLES] {len(h5_paths)} / {len(all_sample_ids)}")
+    print(f"[SAMPLE IDS] {target_sample_ids}")
+    print("=" * 80)
 
     for h5_path in h5_paths:
         sample_id = h5_path.stem
@@ -336,14 +377,21 @@ def run_visualization_for_oncotree(
             if patch_vis_dir.exists() and any(patch_vis_dir.iterdir()) and not overwrite:
                 print(f"[SKIP] patch visualizations exist: {patch_vis_dir}")
             else:
-                save_patch_visualizations_from_h5(
-                    h5_path=h5_path,
-                    output_dir=patch_vis_dir,
-                    sample_id=sample_id,
-                    label=label,
-                    mask_source=mask_source,
-                    cellseg_path=cellseg_path if mask_source == MASK_SOURCE_CELLSEG else None,
-                )
+                if mask_source == MASK_SOURCE_CELLSEG and not cellseg_path.exists():
+                    print(f"[SKIP] cellseg h5 not found for patch masks: {cellseg_path}")
+                else:
+                    save_patch_visualizations_from_h5(
+                        h5_path=h5_path,
+                        output_dir=patch_vis_dir,
+                        sample_id=sample_id,
+                        label=label,
+                        mask_source=mask_source,
+                        cellseg_path=(
+                            cellseg_path
+                            if mask_source == MASK_SOURCE_CELLSEG
+                            else None
+                        ),
+                    )
 
         if save_segment_overlays:
             if not cellseg_path.exists():
@@ -366,10 +414,12 @@ def run_visualization_from_config(config) -> None:
         run_visualization_for_oncotree(
             oncotree=oncotree,
             data_root=config.download.download_dir,
+            sample_ids=config.sample_ids,
             patch_dirname=config.radiomics.patch_dirname,
             cellseg_dirname=config.radiomics.segment_dirname,
             mask_source=config.radiomics.mask_source,
             overwrite=getattr(config.radiomics, "overwrite_visualization", False),
+            use_class_color=config.cellseg.use_class_color,
         )
 
 
