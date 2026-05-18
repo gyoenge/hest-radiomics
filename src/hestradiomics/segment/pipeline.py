@@ -11,7 +11,7 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from hestradiomics.config import CellSegmentConfig, DownloadConfig
+from hestradiomics.config import HestConfig, SegmentConfig
 from hestradiomics.segment.adapter import CellViTInferenceAdapter
 from hestradiomics.segment.io import (
     H5PatchDataset,
@@ -225,8 +225,8 @@ def segment_all_oncotrees(
 
 
 def segment_all_oncotrees_from_config(
-    download_cfg: DownloadConfig,
-    cellseg_cfg: CellSegmentConfig,
+    download_cfg: HestConfig,
+    cellseg_cfg: SegmentConfig,
     sample_ids: Optional[Tuple[str, ...]] = None,
 ) -> List[str]:
     return segment_all_oncotrees(

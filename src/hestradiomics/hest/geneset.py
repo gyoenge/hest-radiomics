@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import scanpy as sc
 
-from hestradiomics.config import DownloadConfig
+from hestradiomics.config import HestConfig
 from hestradiomics.utils import ensure_dir
 
 
@@ -227,7 +227,7 @@ def select_top_k_genes(
 
 
 def run_gene_extraction(
-    download_cfg: DownloadConfig,
+    download_cfg: HestConfig,
     sample_ids: Optional[tuple[str, ...]] = None,
     k_values: Sequence[int] = (
         50,

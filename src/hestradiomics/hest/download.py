@@ -13,7 +13,7 @@ from huggingface_hub import (
     snapshot_download,
 )
 
-from hestradiomics.config import DownloadConfig
+from hestradiomics.config import HestConfig
 from hestradiomics.utils import (
     ensure_dir,
     filter_sample_ids,
@@ -71,7 +71,7 @@ def build_hest_allow_patterns(
 
 
 def download_hest_by_oncotree(
-    download_cfg: DownloadConfig,
+    download_cfg: HestConfig,
     sample_ids: Optional[tuple[str, ...]] = None,
     metadata_uri: str = (
         "hf://datasets/MahmoodLab/hest/HEST_v1_3_0.csv"
@@ -164,7 +164,7 @@ def download_hest_by_oncotree(
 
 
 def run_download(
-    download_cfg: DownloadConfig,
+    download_cfg: HestConfig,
     sample_ids: Optional[tuple[str, ...]] = None,
 ) -> None:
     huggingface_checkin()

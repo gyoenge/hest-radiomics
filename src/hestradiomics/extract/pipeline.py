@@ -293,3 +293,21 @@ def process_single_patch(
         cellseg_df=cellseg_df,
         use_cache=use_cache,
     )
+
+
+def extract_all_oncotrees_from_config(
+    download_cfg,
+    extract_cfg,
+    sample_ids=None,
+):
+    return extract_all_oncotrees(
+        hest_root=str(download_cfg.download_dir),
+        oncotrees=list(download_cfg.oncotrees),
+        sample_ids=sample_ids,
+        output_dirname=extract_cfg.output_dirname,
+        mask_source=extract_cfg.mask_source,
+        filters=extract_cfg.filters,
+        label=extract_cfg.label,
+        use_cache=extract_cfg.use_cache,
+        overwrite=extract_cfg.overwrite,
+    )
