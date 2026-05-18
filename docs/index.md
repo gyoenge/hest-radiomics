@@ -22,10 +22,10 @@ This documentation describes the basic usage of the HEST radiomics pipeline.
 :maxdepth: 1
 :caption: Getting Started
 
-installation
-quickstart
-stepbystep
-configuration
+gettingstart/installation
+gettingstart/quickstart
+gettingstart/stepbystep
+gettingstart/configuration
 ```
 
 ```{toctree}

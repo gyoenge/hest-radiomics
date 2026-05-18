@@ -1,0 +1,43 @@
+# Quick Start 
+
+Run the full download and extraction pipeline:
+
+```bash 
+python -m hestradiomics.run
+```
+
+This command executes the complete HEST-Radiomics pipeline, including:
+
+1. downloading HEST datasets
+2. preparing spatial transcriptomics data
+3. extracting image patches
+4. running cell segmentation
+5. extracting radiomics features
+6. saving processed outputs
+7. generating visualizations and statistics analysis results 
+
+Generated outputs are organized automatically under:
+
+```text
+data/hest/<ONCOTREE>/
+```
+
+Example:
+
+```text
+data/hest/IDC/
+├── patches/
+├── segment/
+├── radiomics/
+├── st/
+└── ...
+```
+
+See also:
+
+- :doc:`Output Overview <outputs/overview>`
+- :doc:`Segment Output Format <outputs/segment>`
+- :doc:`Radiomics Output Format <outputs/radiomics>`
+
+
+

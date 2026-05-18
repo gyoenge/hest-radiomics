@@ -254,28 +254,6 @@ These images provide a lightweight representation of the original slide.
 
 ---
 
-## Typical Workflow
-
-The general pipeline workflow is:
-
-```text
-WSI
-  ↓
-Patch Extraction
-  ↓
-Segmentation
-  ↓
-Radiomics Extraction
-  ↓
-Spatial Transcriptomics Integration
-  ↓
-Visualization / Analysis
-```
-
-Generated outputs are progressively stored in the directories described above.
-
----
-
 ## Notes
 
 * Most outputs are generated automatically by the pipeline.
