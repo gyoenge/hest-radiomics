@@ -77,10 +77,9 @@ def load_all_h5ad_from_dir(
 
     for h5ad_path in h5ad_files:
         print(f"Loading h5ad: {h5ad_path}")
-
-        adata_list.append(
-            sc.read_h5ad(h5ad_path)
-        )
+        adata = sc.read_h5ad(h5ad_path)
+        adata.obs_names_make_unique()
+        adata_list.append(adata)
 
     return adata_list
 
@@ -93,7 +92,6 @@ def get_common_genes(
 
     for adata in adata_list:
         adata = adata.copy()
-        adata.obs_names_make_unique()
 
         if min_cells_pct:
 
