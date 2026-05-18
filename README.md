@@ -6,8 +6,9 @@
 [![dataset](https://img.shields.io/badge/dataset-HEST-orange.svg)](https://github.com/mahmoodlab/HEST)
 [![license](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-
 Radiomics feature extraction pipeline for HEST spatial transcriptomics datasets using WSI patches, cell segmentation, and PyRadiomics-based handcrafted features. 
+
+![Overview](docs/_static/hest_radiomics_overview.png)
 
 ---
 
