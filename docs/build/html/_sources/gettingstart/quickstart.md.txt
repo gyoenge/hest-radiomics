@@ -1,8 +1,6 @@
 # Quick Start 
 
-```{important}
 Run the full pipeline using the following command:
-```
 
 ```bash
 $ python -m hestradiomics.run
