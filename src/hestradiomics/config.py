@@ -4,33 +4,11 @@ from typing import Optional
 
 
 # ============================================================
-# Run setting (All True for Full Pipeline)
+# HEST dataset setting 
 # ============================================================
 
 @dataclass(frozen=True)
-class RunConfig:
-    run_hest_download: bool = True 
-    run_segment: bool = True 
-    run_overlay: bool = True 
-    run_radiomics_extraction: bool = True 
-    run_statistics: bool = True 
-
-    # None: run all samples
-    # list/tuple: run only selected samples
-    sample_ids: Optional[tuple[str, ...]] = (
-        # "NCBI783", 
-        # "NCBI785", 
-        "TENX95", 
-        "TENX99"
-    ) # None | ("NCBI681", "NCBI682")
-
-
-# ============================================================
-# HEST download setting 
-# ============================================================
-
-@dataclass(frozen=True)
-class DownloadConfig: 
+class HestConfig: 
     root: Path = Path("./data").resolve()
     subroot: str = "hestradiomics"
 
@@ -60,9 +38,14 @@ class DownloadConfig:
         "Visium", 
     ])
 
-    @property 
-    def download_dir(self) -> Path:
-        return self.root / self.subroot
+    # None: run all samples
+    # list/tuple: run only selected samples
+    sample_ids: Optional[tuple[str, ...]] = (
+        # "NCBI783", 
+        # "NCBI785", 
+        "TENX95", 
+        "TENX99"
+    ) # None | ("NCBI681", "NCBI682")
 
     
 # ============================================================
@@ -70,7 +53,7 @@ class DownloadConfig:
 # ============================================================
 
 @dataclass(frozen=True)
-class CellSegmentConfig:
+class SegmentConfig:
     model_name: str = "CellViT-SAM-H-x20.pth"
     model_root: Path = Path("./models")
 
@@ -89,11 +72,11 @@ class CellSegmentConfig:
     
 
 # ============================================================
-# Radiomics extraction setting 
+# Radiomics feature extraction setting 
 # ============================================================
 
 @dataclass(frozen=True)
-class RadiomicsConfig: 
+class ExtractConfig: 
     mask_source: str = "cellseg" # "threshold" | "cellseg"
 
     output_dirname: str = "radiomics"
@@ -104,6 +87,15 @@ class RadiomicsConfig:
 
     overwrite: bool = False 
     save_patches: bool = False 
+
+
+# ============================================================
+# Visualization setting
+# ============================================================
+
+@dataclass(frozen=True)
+class VisualizeConfig: 
+    vis_ratio = float = 0.2 # 0.0~1.0 
 
 
 # ============================================================
@@ -121,19 +113,23 @@ class StatisticsConfig:
 # ============================================================
 
 @dataclass(frozen=True)
-class PipelineConfig:
-    run: RunConfig = field(default_factory=RunConfig)
-    download: DownloadConfig = field(default_factory=DownloadConfig)
-    cellseg: CellSegmentConfig = field(default_factory=CellSegmentConfig)
-    radiomics: RadiomicsConfig = field(default_factory=RadiomicsConfig)
+class FullConfig:
+    hest: HestConfig = field(default_factory=HestConfig)
+    segment: SegmentConfig = field(default_factory=SegmentConfig)
+    extract: ExtractConfig = field(default_factory=ExtractConfig)
+    visualize: VisualizeConfig = field(default_factory=VisualizeConfig)
     statistics: StatisticsConfig = field(default_factory=StatisticsConfig)
 
     @property
     def sample_ids(self) -> Optional[tuple[str, ...]]:
-        return self.run.sample_ids
+        return self.hest.sample_ids
+    
+    @property 
+    def download_dir(self) -> Path:
+        return self.hest.root / self.hest.subroot
 
 
-CONFIG = PipelineConfig()
+CONFIG = FullConfig()
 
 
 # ============================================================

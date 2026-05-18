@@ -8,18 +8,26 @@ from hestradiomics.hest import (
 from hestradiomics.segment.pipeline import (
     segment_all_oncotrees_from_config,
 )
+from hestradiomics.analysis import (
+    run_visualization_from_config,
+    save_overlays_all_oncotrees_from_config, 
+)
 
 
 def main():
+    download_dir = CONFIG.download_dir
     sample_ids = CONFIG.sample_ids
-    download_cfg = CONFIG.download
-    cellseg_cfg = CONFIG.cellseg
+    hest_config = CONFIG.hest
+    segment_config = CONFIG.segment
+    extract_config = CONFIG.extract
+    visualize_config = CONFIG.visualize
+    statstics_config = CONFIG.statistics
 
     # -------------------------------------------------------------------------
     # 1. Download HEST
     # -------------------------------------------------------------------------
     run_download(
-        download_cfg=download_cfg,
+        download_cfg=hest_config,
         sample_ids=sample_ids,
     )
     print("\n-------------------------------------------------------------------------\n")
@@ -28,7 +36,7 @@ def main():
     # 2. Extract Gene Sets
     # -------------------------------------------------------------------------
     run_gene_extraction(
-        download_cfg=download_cfg,
+        download_cfg=hest_config,
         sample_ids=sample_ids,
         k_values=(50, 100, 250),
         criteria_values=("var", "mean"),
@@ -40,11 +48,31 @@ def main():
     # 3. Segment HEST Patches
     # -------------------------------------------------------------------------
     segment_paths = segment_all_oncotrees_from_config(
-        download_cfg=download_cfg,
-        cellseg_cfg=cellseg_cfg,
+        download_cfg=hest_config,
+        cellseg_cfg=segment_config,
         sample_ids=sample_ids,
     )
+
+    print(f"[DONE] Segmented {len(segment_paths)} samples.")
     print("\n-------------------------------------------------------------------------\n")
+
+    # -------------------------------------------------------------------------
+    # 4. Visualize Patches / Segment Overlays
+    # -------------------------------------------------------------------------
+    run_visualization_from_config(CONFIG)
+
+    save_overlays_all_oncotrees_from_config(
+        download_cfg=hest_config,
+        cellseg_cfg=segment_config,
+        sample_ids=sample_ids,
+    )
+
+    print("[DONE] Visualization completed.")
+    print("\n-------------------------------------------------------------------------\n")
+
+    # -------------------------------------------------------------------------
+    # 5. Extract Radiomics Features
+    # -------------------------------------------------------------------------
 
 
 if __name__ == "__main__":
