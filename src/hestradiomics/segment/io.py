@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import json
+from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 import geopandas as gpd
@@ -9,6 +10,7 @@ import h5py
 import numpy as np
 import pandas as pd
 from shapely import wkt
+from shapely.geometry import shape
 from torch.utils.data import Dataset
 
 from hestradiomics.utils import ensure_uint8_rgb
@@ -176,63 +178,100 @@ def save_cellseg_h5(
     return save_path
 
 
+def _decode_if_bytes(x):
+    if isinstance(x, bytes):
+        return x.decode("utf-8")
+    return x
+
+
 def load_cellseg_h5(
-    seg_h5_path: str,
+    h5_path: str | Path,
 ) -> Tuple[gpd.GeoDataFrame, pd.DataFrame]:
-    with h5py.File(seg_h5_path, "r") as f:
-        cells = f["cells"]
-        patches = f["patches"]
 
-        cell_rows = []
+    h5_path = Path(h5_path)
 
-        for i in range(len(cells["patch_idx"])):
-            cell_rows.append(
-                {
-                    "patch_idx": int(cells["patch_idx"][i]),
-                    "barcode": _decode_scalar(cells["barcode"][i]),
-                    "cell_id_in_patch": int(cells["cell_id_in_patch"][i]),
-                    "class_id": int(cells["class_id"][i]),
-                    "class_name": _decode_scalar(cells["class_name"][i]),
-                    "geometry": wkt.loads(_decode_scalar(cells["geometry_wkt"][i])),
-                }
-            )
+    seg_rows = []
+    patch_rows = []
 
-        patch_rows = []
+    with h5py.File(h5_path, "r") as f:
+        patch_keys = sorted(f.keys())
 
-        for i in range(len(patches["patch_idx"])):
-            row = {
-                "patch_idx": int(patches["patch_idx"][i]),
-                "barcode": _decode_scalar(patches["barcode"][i]),
-                "n_cells": int(patches["n_cells"][i]),
-            }
+        for patch_key in patch_keys:
+            patch_group = f[patch_key]
 
-            if "coord_raw_json" in patches:
-                row["coord_raw"] = json.loads(
-                    _decode_scalar(patches["coord_raw_json"][i])
+            try:
+                patch_idx = int(patch_key)
+            except Exception:
+                patch_idx = int(
+                    patch_group.attrs.get(
+                        "patch_idx",
+                        -1,
+                    )
                 )
 
-            patch_rows.append(row)
+            patch_rows.append({
+                "patch_idx": patch_idx,
+            })
 
-    if cell_rows:
-        seg_gdf = gpd.GeoDataFrame(
-            cell_rows,
-            geometry="geometry",
-            crs=None,
-        )
-    else:
-        seg_gdf = gpd.GeoDataFrame(
-            {
-                "patch_idx": [],
-                "barcode": [],
-                "cell_id_in_patch": [],
-                "class_id": [],
-                "class_name": [],
-            },
-            geometry=[],
-            crs=None,
-        )
+            cell_keys = sorted(patch_group.keys())
 
-    return seg_gdf, pd.DataFrame(patch_rows)
+            for cell_key in cell_keys:
+                cell_group = patch_group[cell_key]
+
+                geometry_json = cell_group.attrs.get("geometry")
+
+                if geometry_json is None:
+                    continue
+
+                geometry_json = _decode_if_bytes(
+                    geometry_json
+                )
+
+                try:
+                    geometry = shape(
+                        json.loads(geometry_json)
+                    )
+                except Exception:
+                    continue
+
+                seg_rows.append({
+                    "patch_idx": patch_idx,
+
+                    "cell_id_in_patch": int(
+                        cell_group.attrs.get(
+                            "cell_id_in_patch",
+                            -1,
+                        )
+                    ),
+
+                    "class_id": int(
+                        cell_group.attrs.get(
+                            "class_id",
+                            -1,
+                        )
+                    ),
+
+                    "class_name": _decode_if_bytes(
+                        cell_group.attrs.get(
+                            "class_name",
+                            "unknown",
+                        )
+                    ),
+
+                    "geometry": geometry,
+                })
+
+    seg_gdf = gpd.GeoDataFrame(
+        seg_rows,
+        geometry="geometry",
+        crs=None,
+    )
+
+    patch_df = pd.DataFrame(
+        patch_rows
+    ).drop_duplicates()
+
+    return seg_gdf, patch_df
 
 
 def gdf_to_cell_rows(

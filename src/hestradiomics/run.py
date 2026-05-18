@@ -10,8 +10,8 @@ from hestradiomics.segment import (
     segment_all_oncotrees,
 )
 from hestradiomics.analysis import (
-    run_visualization_from_config,
-    save_overlays_all_oncotrees_from_config, 
+    patch_visualization_from_oncotrees,
+    segment_visualization_from_oncotrees, 
 )
 
 
@@ -81,12 +81,21 @@ def main():
     # 4. Visualize Patches / Segment Overlays
     # -------------------------------------------------------------------------
 
-    run_visualization_from_config(CONFIG)
-
-    save_overlays_all_oncotrees_from_config(
-        download_cfg=hest_config,
-        cellseg_cfg=segment_config,
+    patch_visualization_from_oncotrees(
+        download_dir=download_dir,
+        oncotrees=hest_config.oncotrees,
         sample_ids=sample_ids,
+        vis_ratio=visualize_config.vis_ratio,
+        overwrite_visualization=visualize_config.overwrite,
+    )
+
+    segment_visualization_from_oncotrees(
+        hest_root=download_dir,
+        oncotrees=hest_config.oncotrees,
+        sample_ids=sample_ids,
+        vis_ratio=visualize_config.vis_ratio,
+        overwrite=visualize_config.overwrite,
+        use_class_color=True,
     )
 
     print("[DONE] Visualization completed.")
