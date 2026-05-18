@@ -227,7 +227,8 @@ def save_patch_visualizations_from_h5(
     output_dir = Path(output_dir)
     sample_id = sample_id or h5_path.stem
 
-    cellseg_df = None
+    print("Loading Cellsegs...")
+    cellseg_df = None   
     if cellseg_path is not None:
         cellseg_path = Path(cellseg_path)
         if cellseg_path.exists():

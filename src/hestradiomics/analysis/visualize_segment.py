@@ -4,6 +4,9 @@ import math
 import os
 from typing import List, Optional, Tuple
 
+from shapely.geometry import Polygon
+import pandas as pd
+import h5py
 import geopandas as gpd
 import matplotlib.pyplot as plt
 import numpy as np
@@ -12,12 +15,12 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Polygon as MplPolygon
 from tqdm import tqdm
 
+
 from hestradiomics.segment.adapter import iter_polygons
 from hestradiomics.segment.io import (
     H5PatchDataset,
     build_sample_paths,
     list_sample_ids_from_patches,
-    load_cellseg_h5,
 )
 from hestradiomics.utils import ensure_uint8_rgb, filter_sample_ids
 
@@ -65,6 +68,70 @@ def _select_patch_indices(
     )
 
     return [patch_indices_all[i] for i in selected_positions]
+
+
+def load_cellseg_h5(seg_h5_path):
+    rows = []
+
+    with h5py.File(seg_h5_path, "r") as f:
+        print("[H5 KEYS]", list(f.keys()))
+
+        def print_tree(name, obj):
+            if isinstance(obj, h5py.Dataset):
+                print(name, obj.shape, obj.dtype)
+            else:
+                print(name)
+        f.visititems(print_tree)
+
+        # 실제 key 이름 확인 필요
+        # 예: cells/contours, cells/patch_idx, cells/class_name 등
+        contours = f["contours"][:]
+        patch_indices = f["patch_idx"][:]
+
+        classes = None
+        if "class_name" in f:
+            classes = f["class_name"][:]
+
+        for i, contour in enumerate(contours):
+            contour = np.asarray(contour)
+
+            if contour.ndim != 2 or contour.shape[0] < 3:
+                continue
+
+            geom = Polygon(contour)
+
+            if not geom.is_valid or geom.is_empty:
+                continue
+
+            row = {
+                "patch_idx": int(patch_indices[i]),
+                "geometry": geom,
+            }
+
+            if classes is not None:
+                cls = classes[i]
+                if isinstance(cls, bytes):
+                    cls = cls.decode()
+                row["class_name"] = cls
+
+            rows.append(row)
+
+    seg_df = pd.DataFrame(rows)
+
+    if seg_df.empty:
+        return gpd.GeoDataFrame(
+            seg_df,
+            geometry=[],
+            crs=None,
+        ), pd.DataFrame()
+
+    seg_gdf = gpd.GeoDataFrame(
+        seg_df,
+        geometry="geometry",
+        crs=None,
+    )
+
+    return seg_gdf, pd.DataFrame()
 
 
 def save_overlay_png(
