@@ -25,7 +25,7 @@ This documentation describes the basic usage of the HEST radiomics pipeline.
 installation
 quickstart
 stepbystep
-configuration 
+configuration
 ```
 
 ```{toctree}
@@ -33,7 +33,7 @@ configuration
 :caption: Output Description
 
 outputs/overview
-outputs/segment 
+outputs/segment
 outputs/radiomics
 ```
 

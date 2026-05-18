@@ -1,4 +1,4 @@
-# Segment File Format
+# Segment Output Format
 
 The segmentation file stores cell-level segmentation metadata for each spatial transcriptomics patch.  
 Instead of storing dense bitmap masks, the pipeline stores polygon-based vector representations of segmented cells, enabling compact storage and flexible downstream analysis.
