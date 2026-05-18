@@ -7,7 +7,9 @@ Radiomics feature extraction pipeline for HEST dataset with WSI (Whole Slide Ima
 
 ---
 
-## Installation
+## Quick Start
+
+### Installation
 
 Firstly, create and activate conda environment: 
 ```bash
@@ -35,13 +37,10 @@ pip install openslide-python openslide-bin
 pip install cellvit
 ```
 
----
-
-## Run
+### Run
 ```bash 
 export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
 python src/hestradiomics/run.py
 ```
 
-... 
 
