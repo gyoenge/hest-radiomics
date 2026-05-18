@@ -1,26 +1,29 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" data-content_root="./">
+<html class="writer-html5" lang="en" data-content_root="../">
 <head>
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Installation &mdash; HEST-Radiomics 1.0.0 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
 
   
-      <script src="_static/jquery.js?v=5d32c60e"></script>
-      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=8d563738"></script>
-      <script src="_static/doctools.js?v=9bcbadda"></script>
-      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
-    <script src="_static/js/theme.js"></script>
-    <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=f281be69"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Quick Start" href="quickstart.html" />
-    <link rel="prev" title="HEST Radiomics Documentation" href="index.html" /> 
+    <link rel="prev" title="HEST Radiomics Documentation" href="../index.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -31,11 +34,11 @@
 
           
           
-          <a href="index.html" class="icon icon-home">
+          <a href="../index.html" class="icon icon-home">
             HEST-Radiomics
           </a>
 <div role="search">
-  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
@@ -48,7 +51,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#create-conda-environment">1. Create conda environment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#install-pytorch">2. Install PyTorch</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#install-hest-radiomics">3. Install hest-radiomics</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#install-cellvit-dependencies-optional">4. Install CellViT dependencies (optional)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#install-cellvit-dependencies">4. Install CellViT dependencies</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#install-openslide">Install OpenSlide</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#install-cellvit">Install CellViT</a></li>
 </ul>
@@ -56,7 +59,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#verify-installation">5. Verify installation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#recommended-environment">6. Recommended environment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#troubleshooting">7. Troubleshooting</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#flashattention-cuda-mismatch">FlashAttention / CUDA mismatch</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#cuda-mismatch">CUDA mismatch</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#openslide-import-error">OpenSlide import error</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#numpy-compatibility-issues">NumPy compatibility issues</a></li>
 </ul>
@@ -69,9 +72,9 @@
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Output Description</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="outputs/overview.html">Output Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="outputs/segment.html">Segment Output Format</a></li>
-<li class="toctree-l1"><a class="reference internal" href="outputs/radiomics.html">Radiomics Output Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../outputs/overview.html">Output Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../outputs/segment.html">Segment Output Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../outputs/radiomics.html">Radiomics Output Format</a></li>
 </ul>
 
         </div>
@@ -80,17 +83,17 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">HEST-Radiomics</a>
+          <a href="../index.html">HEST-Radiomics</a>
       </nav>
 
       <div class="wy-nav-content">
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
       <li class="breadcrumb-item active">Installation</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="_sources/installation.md.txt" rel="nofollow"> View page source</a>
+            <a href="../_sources/gettingstart/installation.md.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -131,13 +134,15 @@ conda<span class="w"> </span>activate<span class="w"> </span>hestradiomics
 <section id="install-hest-radiomics">
 <h2>3. Install hest-radiomics<a class="headerlink" href="#install-hest-radiomics" title="Link to this heading"></a></h2>
 <p>Inside the project root:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.<span class="w"> </span>--no-build-isolation
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/gyoenge/hest-radiomics.git
+<span class="nb">cd</span><span class="w"> </span>hest-radiomics/
+pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.<span class="w"> </span>--no-build-isolation
 </pre></div>
 </div>
 </section>
 <hr class="docutils" />
-<section id="install-cellvit-dependencies-optional">
-<h2>4. Install CellViT dependencies (optional)<a class="headerlink" href="#install-cellvit-dependencies-optional" title="Link to this heading"></a></h2>
+<section id="install-cellvit-dependencies">
+<h2>4. Install CellViT dependencies<a class="headerlink" href="#install-cellvit-dependencies" title="Link to this heading"></a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">segment</span></code> engine additionally requires <code class="docutils literal notranslate"><span class="pre">cellvit</span></code>.</p>
 <section id="install-openslide">
 <h3>Install OpenSlide<a class="headerlink" href="#install-openslide" title="Link to this heading"></a></h3>
@@ -173,8 +178,8 @@ pip<span class="w"> </span>install<span class="w"> </span>openslide-python<span 
 <hr class="docutils" />
 <section id="troubleshooting">
 <h2>7. Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
-<section id="flashattention-cuda-mismatch">
-<h3>FlashAttention / CUDA mismatch<a class="headerlink" href="#flashattention-cuda-mismatch" title="Link to this heading"></a></h3>
+<section id="cuda-mismatch">
+<h3>CUDA mismatch<a class="headerlink" href="#cuda-mismatch" title="Link to this heading"></a></h3>
 <p>If you encounter:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>The detected CUDA version mismatches the version that was used to compile PyTorch
 </pre></div>
@@ -189,7 +194,6 @@ pip<span class="w"> </span>install<span class="w"> </span>openslide-python<span 
 </pre></div>
 </div>
 </section>
-<hr class="docutils" />
 <section id="openslide-import-error">
 <h3>OpenSlide import error<a class="headerlink" href="#openslide-import-error" title="Link to this heading"></a></h3>
 <p>If:</p>
@@ -201,7 +205,6 @@ pip<span class="w"> </span>install<span class="w"> </span>openslide-python<span 
 </pre></div>
 </div>
 </section>
-<hr class="docutils" />
 <section id="numpy-compatibility-issues">
 <h3>NumPy compatibility issues<a class="headerlink" href="#numpy-compatibility-issues" title="Link to this heading"></a></h3>
 <p>If packages fail with NumPy 2.x:</p>
@@ -216,7 +219,7 @@ pip<span class="w"> </span>install<span class="w"> </span>openslide-python<span 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="index.html" class="btn btn-neutral float-left" title="HEST Radiomics Documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../index.html" class="btn btn-neutral float-left" title="HEST Radiomics Documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="quickstart.html" class="btn btn-neutral float-right" title="Quick Start" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 

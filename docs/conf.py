@@ -5,6 +5,7 @@ release = "1.0.0"
 
 extensions = [
     "myst_parser",
+    "sphinx_copybutton", 
 ]
 
 html_theme = "sphinx_rtd_theme"
