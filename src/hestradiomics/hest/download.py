@@ -70,14 +70,17 @@ def build_hest_allow_patterns(
     return allow_patterns
 
 
-def download_hest_by_oncotree(
-    download_cfg: HestConfig,
+def download_hest(
+    download_dir: Path, 
+    oncotrees: tuple[str] = ("IDC"), 
+    technologies: tuple[str] = ("Visium", "Xenium"), 
+    required_dirs: tuple[str] = ("patches", "st"), 
+    optional_dirs: tuple[str] = (), 
     sample_ids: Optional[tuple[str, ...]] = None,
     metadata_uri: str = (
         "hf://datasets/MahmoodLab/hest/HEST_v1_3_0.csv"
     ),
 ) -> None:
-    download_dir = download_cfg.download_dir
 
     print(f"Loading HEST metadata: {metadata_uri}")
 
@@ -87,15 +90,15 @@ def download_hest_by_oncotree(
         (meta_df["species"] == "Homo sapiens")
         & (
             meta_df["oncotree_code"]
-            .isin(download_cfg.oncotrees)
+            .isin(oncotrees)
         )
         & (
             meta_df["st_technology"]
-            .isin(download_cfg.technologies)
+            .isin(technologies)
         )
     ]
 
-    for oncotree_code in download_cfg.oncotrees:
+    for oncotree_code in oncotrees:
 
         oncotree_df = meta_df[
             meta_df["oncotree_code"]
@@ -129,8 +132,8 @@ def download_hest_by_oncotree(
 
         allow_patterns = build_hest_allow_patterns(
             sample_ids=target_sample_ids,
-            required_dirs=download_cfg.required_dirs,
-            optional_dirs=download_cfg.optional_dirs,
+            required_dirs=required_dirs,
+            optional_dirs=optional_dirs,
         )
 
         oncotree_dir = ensure_dir(
@@ -161,18 +164,4 @@ def download_hest_by_oncotree(
             f"Completed downloading HEST | "
             f"oncotree={oncotree_code}"
         )
-
-
-def run_download(
-    download_cfg: HestConfig,
-    sample_ids: Optional[tuple[str, ...]] = None,
-) -> None:
-    huggingface_checkin()
-
-    download_hest_by_oncotree(
-        download_cfg=download_cfg,
-        sample_ids=sample_ids,
-    )
-
-    print("HEST download completed")
 

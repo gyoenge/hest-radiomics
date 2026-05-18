@@ -1,7 +1,6 @@
 from .download import (
-    run_download,
-    download_hest_by_oncotree,
-    build_hest_allow_patterns,
+    huggingface_checkin, 
+    download_hest,
 )
 
 from .geneset import (
@@ -12,9 +11,8 @@ from .geneset import (
 )
 
 __all__ = [
-    "run_download",
-    "download_hest_by_oncotree",
-    "build_hest_allow_patterns",
+    "huggingface_checkin", 
+    "download_hest",
     "run_gene_extraction",
     "load_all_h5ad_from_dir",
     "select_top_k_genes",

@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from hestradiomics.config import CONFIG
 from hestradiomics.hest import (
-    run_download,
+    huggingface_checkin, 
+    download_hest,
     run_gene_extraction,
 )
 from hestradiomics.segment.pipeline import (
@@ -26,10 +27,20 @@ def main():
     # -------------------------------------------------------------------------
     # 1. Download HEST
     # -------------------------------------------------------------------------
-    run_download(
-        download_cfg=hest_config,
+
+    print()
+    huggingface_checkin()
+
+    download_hest(
+        download_dir=download_dir, 
+        oncotrees=hest_config.oncotrees, 
+        technologies=hest_config.technologies, 
+        required_dirs=hest_config.required_dirs, 
+        optional_dirs=hest_config.optional_dirs, 
         sample_ids=sample_ids,
     )
+
+    print("[INFO] HEST download completed")
     print("\n-------------------------------------------------------------------------\n")
 
     # -------------------------------------------------------------------------
