@@ -1,17 +1,17 @@
 # HEST Radiomics Documentation
 
-Welcome to the documentation for **HEST-Radiomics**, a radiomics extraction pipeline for spatial transcriptomics and whole-slide imaging (WSI) analysis.
+Welcome to the documentation for **HEST-Radiomics**, a radiomics-based handcrafted feature extraction pipeline for spatial transcriptomics and whole-slide imaging (WSI) analysis.
 
 This documentation describes the basic usage of the HEST radiomics pipeline.
 
-The project provides:
+<!-- The project provides:
 
 - HEST dataset handling utilities
 - Patch-level radiomics extraction
 - Cell-aware segmentation processing
 - Spatial transcriptomics integration
 - HDF5 / H5AD-based workflows
-- Multi-processing extraction pipelines
+- Multi-processing extraction pipelines -->
 
 
 ---
@@ -31,9 +31,9 @@ radiomics
 :maxdepth: 1
 :caption: Output Description
 
-outputs/overview.md
+outputs/overview
 outputs/segment 
-outputs/radiomics.md
+outputs/radiomics
 ```
 
 <!-- 
