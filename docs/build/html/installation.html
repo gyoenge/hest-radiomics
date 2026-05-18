@@ -1,0 +1,238 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Installation &mdash; Project name not set  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Dataset" href="dataset.html" />
+    <link rel="prev" title="HEST Radiomics Documentation" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Project name not set
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#create-conda-environment">1. Create conda environment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#install-pytorch">2. Install PyTorch</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#install-hest-radiomics">3. Install hest-radiomics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#install-cellvit-dependencies-optional">4. Install CellViT dependencies (optional)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#install-openslide">Install OpenSlide</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#install-cellvit">Install CellViT</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#verify-installation">5. Verify installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#recommended-environment">6. Recommended environment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#troubleshooting">7. Troubleshooting</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#flashattention-cuda-mismatch">FlashAttention / CUDA mismatch</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#openslide-import-error">OpenSlide import error</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#numpy-compatibility-issues">NumPy compatibility issues</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="dataset.html">Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="radiomics.html">Radiomics Extraction</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Project name not set</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Installation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/installation.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="installation">
+<h1>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h1>
+<section id="create-conda-environment">
+<h2>1. Create conda environment<a class="headerlink" href="#create-conda-environment" title="Link to this heading"></a></h2>
+<p>Firstly, create and activate the conda environment:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda<span class="w"> </span>create<span class="w"> </span>-n<span class="w"> </span>hestradiomics<span class="w"> </span><span class="nv">python</span><span class="o">=</span><span class="m">3</span>.10
+conda<span class="w"> </span>activate<span class="w"> </span>hestradiomics
+</pre></div>
+</div>
+<blockquote>
+<div><p><code class="docutils literal notranslate"><span class="pre">cellvit</span></code> currently requires Python &gt;= 3.10.</p>
+</div></blockquote>
+</section>
+<hr class="docutils" />
+<section id="install-pytorch">
+<h2>2. Install PyTorch<a class="headerlink" href="#install-pytorch" title="Link to this heading"></a></h2>
+<p>Install <code class="docutils literal notranslate"><span class="pre">torch</span></code> and <code class="docutils literal notranslate"><span class="pre">torchvision</span></code> matching your CUDA environment.</p>
+<p>Example for CUDA 12.1:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>torch<span class="w"> </span>torchvision<span class="w"> </span>torchaudio<span class="w"> </span>--index-url<span class="w"> </span>https://download.pytorch.org/whl/cu121
+</pre></div>
+</div>
+<p>Install compatible NumPy version:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;numpy&lt;2.0.0,&gt;=1.24&quot;</span>
+</pre></div>
+</div>
+<blockquote>
+<div><p>Some dependencies are not yet fully compatible with NumPy 2.x.</p>
+</div></blockquote>
+</section>
+<hr class="docutils" />
+<section id="install-hest-radiomics">
+<h2>3. Install hest-radiomics<a class="headerlink" href="#install-hest-radiomics" title="Link to this heading"></a></h2>
+<p>Inside the project root:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.<span class="w"> </span>--no-build-isolation
+</pre></div>
+</div>
+</section>
+<hr class="docutils" />
+<section id="install-cellvit-dependencies-optional">
+<h2>4. Install CellViT dependencies (optional)<a class="headerlink" href="#install-cellvit-dependencies-optional" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">segment</span></code> engine additionally requires <code class="docutils literal notranslate"><span class="pre">cellvit</span></code>.</p>
+<section id="install-openslide">
+<h3>Install OpenSlide<a class="headerlink" href="#install-openslide" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>openslide
+pip<span class="w"> </span>install<span class="w"> </span>openslide-python<span class="w"> </span>openslide-bin
+</pre></div>
+</div>
+</section>
+<section id="install-cellvit">
+<h3>Install CellViT<a class="headerlink" href="#install-cellvit" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>cellvit
+</pre></div>
+</div>
+</section>
+</section>
+<hr class="docutils" />
+<section id="verify-installation">
+<h2>5. Verify installation<a class="headerlink" href="#verify-installation" title="Link to this heading"></a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import hestradiomics; print(&#39;ok&#39;)&quot;</span>
+</pre></div>
+</div>
+</section>
+<hr class="docutils" />
+<section id="recommended-environment">
+<h2>6. Recommended environment<a class="headerlink" href="#recommended-environment" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Python 3.10</p></li>
+<li><p>CUDA 12.1</p></li>
+<li><p>PyTorch &gt;= 2.1</p></li>
+<li><p>Linux (Ubuntu / Rocky Linux / RHEL recommended)</p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="troubleshooting">
+<h2>7. Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<section id="flashattention-cuda-mismatch">
+<h3>FlashAttention / CUDA mismatch<a class="headerlink" href="#flashattention-cuda-mismatch" title="Link to this heading"></a></h3>
+<p>If you encounter:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>The detected CUDA version mismatches the version that was used to compile PyTorch
+</pre></div>
+</div>
+<p>Make sure:</p>
+<ul class="simple">
+<li><p>CUDA runtime matches the installed PyTorch build</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">torch.version.cuda</span></code> matches your environment</p></li>
+</ul>
+<p>Check:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import torch; print(torch.version.cuda)&quot;</span>
+</pre></div>
+</div>
+</section>
+<hr class="docutils" />
+<section id="openslide-import-error">
+<h3>OpenSlide import error<a class="headerlink" href="#openslide-import-error" title="Link to this heading"></a></h3>
+<p>If:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>ImportError: libopenslide.so
+</pre></div>
+</div>
+<p>Reinstall:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>openslide
+</pre></div>
+</div>
+</section>
+<hr class="docutils" />
+<section id="numpy-compatibility-issues">
+<h3>NumPy compatibility issues<a class="headerlink" href="#numpy-compatibility-issues" title="Link to this heading"></a></h3>
+<p>If packages fail with NumPy 2.x:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;numpy&lt;2.0.0&quot;</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="HEST Radiomics Documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="dataset.html" class="btn btn-neutral float-right" title="Dataset" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
