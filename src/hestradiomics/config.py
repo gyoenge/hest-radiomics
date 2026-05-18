@@ -18,8 +18,8 @@ class RunConfig:
     # None: run all samples
     # list/tuple: run only selected samples
     sample_ids: Optional[tuple[str, ...]] = (
-        "NCBI783", 
-        "NCBI785", 
+        # "NCBI783", 
+        # "NCBI785", 
         "TENX95", 
         "TENX99"
     ) # None | ("NCBI681", "NCBI682")

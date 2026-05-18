@@ -5,11 +5,15 @@ from hestradiomics.hest import (
     run_download,
     run_gene_extraction,
 )
+from hestradiomics.segment.pipeline import (
+    segment_all_oncotrees_from_config,
+)
 
 
 def main():
     sample_ids = CONFIG.sample_ids
     download_cfg = CONFIG.download
+    cellseg_cfg = CONFIG.cellseg
 
     # -------------------------------------------------------------------------
     # 1. Download HEST
@@ -25,23 +29,22 @@ def main():
     run_gene_extraction(
         download_cfg=download_cfg,
         sample_ids=sample_ids,
-
-        k_values=(
-            50,
-            100,
-            250,
-        ),
-
-        criteria_values=(
-            "var",
-            "mean",
-        ),
-
+        k_values=(50, 100, 250),
+        criteria_values=("var", "mean"),
         min_cells_pct=0.1,
     )
+
+    # -------------------------------------------------------------------------
+    # 3. Segment HEST Patches
+    # -------------------------------------------------------------------------
+    segment_paths = segment_all_oncotrees_from_config(
+        download_cfg=download_cfg,
+        cellseg_cfg=cellseg_cfg,
+        sample_ids=sample_ids,
+    )
+
+    print(f"[DONE] Segmented {len(segment_paths)} samples.")
 
 
 if __name__ == "__main__":
     main()
-
-
