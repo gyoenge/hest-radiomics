@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import geopandas as gpd
 import matplotlib.pyplot as plt
@@ -11,10 +11,13 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Polygon as MplPolygon
 from tqdm import tqdm
 
+from hestradiomics.config import CellSegmentConfig, DownloadConfig
 from hestradiomics.segment.adapter import iter_polygons
-from hestradiomics.segment.io import H5PatchDataset, load_cellseg_h5
-from hestradiomics.utils import ensure_uint8_rgb
-
+from hestradiomics.segment.io import (
+    H5PatchDataset, load_cellseg_h5, 
+    list_sample_ids_from_patches, build_sample_paths, 
+)
+from hestradiomics.utils import ensure_uint8_rgb, filter_sample_ids
 
 def save_overlay_png(
     img: np.ndarray,
@@ -180,3 +183,98 @@ def save_overlays_from_cellseg_h5(
         )
 
     return overlay_dir
+
+
+def save_overlay_one_sample(
+    hest_root: str,
+    oncotree: str,
+    sample_id: str,
+    use_class_color: bool = True,
+    overwrite: bool = False,
+) -> Optional[str]:
+    paths = build_sample_paths(
+        hest_root=hest_root,
+        oncotree=oncotree,
+        sample_id=sample_id,
+    )
+
+    patch_h5_path = paths["patch_h5_path"]
+    seg_h5_path = paths["seg_h5_path"]
+    overlay_dir = paths["overlay_dir"]
+
+    if not os.path.exists(patch_h5_path):
+        print(f"[WARN] patch h5 not found: {patch_h5_path}")
+        return None
+
+    if not os.path.exists(seg_h5_path):
+        print(f"[WARN] segment h5 not found: {seg_h5_path}")
+        return None
+
+    if (
+        os.path.isdir(overlay_dir)
+        and len(os.listdir(overlay_dir)) > 0
+        and not overwrite
+    ):
+        print(f"[SKIP] overlay exists: {overlay_dir}")
+        return overlay_dir
+
+    return save_overlays_from_cellseg_h5(
+        source_h5_path=patch_h5_path,
+        seg_h5_path=seg_h5_path,
+        overlay_dir=overlay_dir,
+        use_class_color=use_class_color,
+    )
+
+
+
+def save_overlays_all_oncotrees(
+    hest_root: str,
+    oncotrees: List[str],
+    sample_ids: Optional[Tuple[str, ...]] = None,
+    use_class_color: bool = True,
+    overwrite: bool = False,
+) -> List[str]:
+    output_dirs = []
+
+    for oncotree in oncotrees:
+        oncotree_root = os.path.join(
+            hest_root,
+            oncotree,
+        )
+
+        all_sample_ids = list_sample_ids_from_patches(
+            oncotree_root
+        )
+
+        target_sample_ids = filter_sample_ids(
+            all_sample_ids=all_sample_ids,
+            selected_sample_ids=sample_ids,
+        )
+
+        for sample_id in target_sample_ids:
+            overlay_dir = save_overlay_one_sample(
+                hest_root=hest_root,
+                oncotree=oncotree,
+                sample_id=sample_id,
+                use_class_color=use_class_color,
+                overwrite=overwrite,
+            )
+
+            if overlay_dir is not None:
+                output_dirs.append(overlay_dir)
+
+    return output_dirs
+
+
+def save_overlays_all_oncotrees_from_config(
+    download_cfg: DownloadConfig,
+    cellseg_cfg: CellSegmentConfig,
+    sample_ids: Optional[Tuple[str, ...]] = None,
+) -> List[str]:
+    return save_overlays_all_oncotrees(
+        hest_root=str(download_cfg.download_dir),
+        oncotrees=list(download_cfg.oncotrees),
+        sample_ids=sample_ids,
+        use_class_color=cellseg_cfg.use_class_color,
+        overwrite=cellseg_cfg.overwrite_overlay,
+    )

@@ -17,47 +17,11 @@ from hestradiomics.segment.io import (
     H5PatchDataset,
     collate_patches,
     save_cellseg_h5,
+    gdf_to_cell_rows, 
+    list_sample_ids_from_patches, 
+    build_sample_paths
 )
-from hestradiomics.segment.visualize import save_overlays_from_cellseg_h5
 from hestradiomics.utils import filter_sample_ids
-
-
-def _gdf_to_cell_rows(
-    gdf: gpd.GeoDataFrame,
-    patch_idx: int,
-    barcode: str,
-) -> List[Dict[str, Any]]:
-    rows = []
-
-    if len(gdf) == 0:
-        return rows
-
-    gdf = gdf.copy()
-
-    if "cell_id_in_patch" not in gdf.columns:
-        gdf["cell_id_in_patch"] = list(range(1, len(gdf) + 1))
-
-    for _, row in gdf.iterrows():
-        rows.append(
-            {
-                "patch_idx": int(patch_idx),
-                "barcode": barcode,
-                "cell_id_in_patch": int(row["cell_id_in_patch"]),
-                "class_id": (
-                    int(row["class_id"])
-                    if "class_id" in gdf.columns and pd.notna(row["class_id"])
-                    else -1
-                ),
-                "class_name": (
-                    str(row["class_name"])
-                    if "class_name" in gdf.columns and pd.notna(row["class_name"])
-                    else "unknown"
-                ),
-                "geometry": row.geometry,
-            }
-        )
-
-    return rows
 
 
 def segment_h5_patches_with_cellvit(
@@ -120,7 +84,7 @@ def segment_h5_patches_with_cellvit(
             barcodes,
             coords,
         ):
-            rows = _gdf_to_cell_rows(
+            rows = gdf_to_cell_rows(
                 gdf=gdf,
                 patch_idx=patch_idx,
                 barcode=barcode,
@@ -174,55 +138,6 @@ def segment_h5_patches_with_cellvit(
     return seg_h5_path
 
 
-def list_sample_ids_from_patches(
-    oncotree_root: str,
-) -> List[str]:
-    patches_dir = os.path.join(
-        oncotree_root,
-        "patches",
-    )
-
-    if not os.path.isdir(patches_dir):
-        print(f"[WARN] patches dir not found: {patches_dir}")
-        return []
-
-    return [
-        os.path.splitext(filename)[0]
-        for filename in sorted(os.listdir(patches_dir))
-        if filename.endswith(".h5")
-    ]
-
-
-def build_sample_paths(
-    hest_root: str,
-    oncotree: str,
-    sample_id: str,
-) -> Dict[str, str]:
-    data_root = os.path.join(
-        hest_root,
-        oncotree,
-    )
-
-    segment_dir = os.path.join(
-        data_root,
-        "segment",
-    )
-
-    segment_vis_dir = os.path.join(
-        data_root,
-        "segment_vis",
-    )
-
-    return {
-        "data_root": data_root,
-        "patch_h5_path": os.path.join(data_root, "patches", f"{sample_id}.h5"),
-        "segment_dir": segment_dir,
-        "segment_vis_dir": segment_vis_dir,
-        "seg_h5_path": os.path.join(segment_dir, f"{sample_id}.h5"),
-        "summary_json_path": os.path.join(segment_dir, f"{sample_id}.summary.json"),
-        "runtime_dir": os.path.join(segment_dir, "_cellvit_runtime"),
-        "overlay_dir": os.path.join(segment_vis_dir, sample_id),
-    }
 
 
 def segment_one_sample(
@@ -261,47 +176,6 @@ def segment_one_sample(
         batch_size=batch_size,
         num_workers=num_workers,
         device=device,
-    )
-
-
-def save_overlay_one_sample(
-    hest_root: str,
-    oncotree: str,
-    sample_id: str,
-    use_class_color: bool = True,
-    overwrite: bool = False,
-) -> Optional[str]:
-    paths = build_sample_paths(
-        hest_root=hest_root,
-        oncotree=oncotree,
-        sample_id=sample_id,
-    )
-
-    patch_h5_path = paths["patch_h5_path"]
-    seg_h5_path = paths["seg_h5_path"]
-    overlay_dir = paths["overlay_dir"]
-
-    if not os.path.exists(patch_h5_path):
-        print(f"[WARN] patch h5 not found: {patch_h5_path}")
-        return None
-
-    if not os.path.exists(seg_h5_path):
-        print(f"[WARN] segment h5 not found: {seg_h5_path}")
-        return None
-
-    if (
-        os.path.isdir(overlay_dir)
-        and len(os.listdir(overlay_dir)) > 0
-        and not overwrite
-    ):
-        print(f"[SKIP] overlay exists: {overlay_dir}")
-        return overlay_dir
-
-    return save_overlays_from_cellseg_h5(
-        source_h5_path=patch_h5_path,
-        seg_h5_path=seg_h5_path,
-        overlay_dir=overlay_dir,
-        use_class_color=use_class_color,
     )
 
 
@@ -350,45 +224,6 @@ def segment_all_oncotrees(
     return output_paths
 
 
-def save_overlays_all_oncotrees(
-    hest_root: str,
-    oncotrees: List[str],
-    sample_ids: Optional[Tuple[str, ...]] = None,
-    use_class_color: bool = True,
-    overwrite: bool = False,
-) -> List[str]:
-    output_dirs = []
-
-    for oncotree in oncotrees:
-        oncotree_root = os.path.join(
-            hest_root,
-            oncotree,
-        )
-
-        all_sample_ids = list_sample_ids_from_patches(
-            oncotree_root
-        )
-
-        target_sample_ids = filter_sample_ids(
-            all_sample_ids=all_sample_ids,
-            selected_sample_ids=sample_ids,
-        )
-
-        for sample_id in target_sample_ids:
-            overlay_dir = save_overlay_one_sample(
-                hest_root=hest_root,
-                oncotree=oncotree,
-                sample_id=sample_id,
-                use_class_color=use_class_color,
-                overwrite=overwrite,
-            )
-
-            if overlay_dir is not None:
-                output_dirs.append(overlay_dir)
-
-    return output_dirs
-
-
 def segment_all_oncotrees_from_config(
     download_cfg: DownloadConfig,
     cellseg_cfg: CellSegmentConfig,
@@ -405,16 +240,3 @@ def segment_all_oncotrees_from_config(
         overwrite=cellseg_cfg.overwrite_segment,
     )
 
-
-def save_overlays_all_oncotrees_from_config(
-    download_cfg: DownloadConfig,
-    cellseg_cfg: CellSegmentConfig,
-    sample_ids: Optional[Tuple[str, ...]] = None,
-) -> List[str]:
-    return save_overlays_all_oncotrees(
-        hest_root=str(download_cfg.download_dir),
-        oncotrees=list(download_cfg.oncotrees),
-        sample_ids=sample_ids,
-        use_class_color=cellseg_cfg.use_class_color,
-        overwrite=cellseg_cfg.overwrite_overlay,
-    )

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import json
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
@@ -232,3 +233,92 @@ def load_cellseg_h5(
         )
 
     return seg_gdf, pd.DataFrame(patch_rows)
+
+
+def gdf_to_cell_rows(
+    gdf: gpd.GeoDataFrame,
+    patch_idx: int,
+    barcode: str,
+) -> List[Dict[str, Any]]:
+    rows = []
+
+    if len(gdf) == 0:
+        return rows
+
+    gdf = gdf.copy()
+
+    if "cell_id_in_patch" not in gdf.columns:
+        gdf["cell_id_in_patch"] = list(range(1, len(gdf) + 1))
+
+    for _, row in gdf.iterrows():
+        rows.append(
+            {
+                "patch_idx": int(patch_idx),
+                "barcode": barcode,
+                "cell_id_in_patch": int(row["cell_id_in_patch"]),
+                "class_id": (
+                    int(row["class_id"])
+                    if "class_id" in gdf.columns and pd.notna(row["class_id"])
+                    else -1
+                ),
+                "class_name": (
+                    str(row["class_name"])
+                    if "class_name" in gdf.columns and pd.notna(row["class_name"])
+                    else "unknown"
+                ),
+                "geometry": row.geometry,
+            }
+        )
+
+    return rows
+
+
+def list_sample_ids_from_patches(
+    oncotree_root: str,
+) -> List[str]:
+    patches_dir = os.path.join(
+        oncotree_root,
+        "patches",
+    )
+
+    if not os.path.isdir(patches_dir):
+        print(f"[WARN] patches dir not found: {patches_dir}")
+        return []
+
+    return [
+        os.path.splitext(filename)[0]
+        for filename in sorted(os.listdir(patches_dir))
+        if filename.endswith(".h5")
+    ]
+
+
+def build_sample_paths(
+    hest_root: str,
+    oncotree: str,
+    sample_id: str,
+) -> Dict[str, str]:
+    data_root = os.path.join(
+        hest_root,
+        oncotree,
+    )
+
+    segment_dir = os.path.join(
+        data_root,
+        "segment",
+    )
+
+    segment_vis_dir = os.path.join(
+        data_root,
+        "segment_vis",
+    )
+
+    return {
+        "data_root": data_root,
+        "patch_h5_path": os.path.join(data_root, "patches", f"{sample_id}.h5"),
+        "segment_dir": segment_dir,
+        "segment_vis_dir": segment_vis_dir,
+        "seg_h5_path": os.path.join(segment_dir, f"{sample_id}.h5"),
+        "summary_json_path": os.path.join(segment_dir, f"{sample_id}.summary.json"),
+        "runtime_dir": os.path.join(segment_dir, "_cellvit_runtime"),
+        "overlay_dir": os.path.join(segment_vis_dir, sample_id),
+    }
