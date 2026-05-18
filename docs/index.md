@@ -2,8 +2,6 @@
 
 Welcome to the documentation for **HEST-Radiomics**, a radiomics-based handcrafted feature extraction pipeline for spatial transcriptomics and whole-slide imaging (WSI) analysis.
 
-This documentation describes the basic usage of the HEST-Radiomics pipeline.
-
 HEST-Radiomics is built on the publicly available HEST spatial transcriptomics dataset and uses the PyRadiomics library for handcrafted feature extraction.
 
 ```{image} _static/hest_radiomics_overview.png
@@ -11,6 +9,8 @@ HEST-Radiomics is built on the publicly available HEST spatial transcriptomics d
 :align: center
 :alt: HEST-Radiomics overview
 ```
+
+This documentation describes the basic usage of the HEST-Radiomics pipeline.
 
 <!-- The project provides:
 
