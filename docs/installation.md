@@ -38,12 +38,14 @@ pip install "numpy<2.0.0,>=1.24"
 Inside the project root:
 
 ```bash
+git clone https://github.com/gyoenge/hest-radiomics.git
+cd hest-radiomics/
 pip install -e . --no-build-isolation
 ```
 
 ---
 
-## 4. Install CellViT dependencies (optional)
+## 4. Install CellViT dependencies 
 
 The `segment` engine additionally requires `cellvit`.
 
@@ -81,7 +83,7 @@ python -c "import hestradiomics; print('ok')"
 
 ## 7. Troubleshooting
 
-### FlashAttention / CUDA mismatch
+### CUDA mismatch
 
 If you encounter:
 
@@ -99,8 +101,6 @@ Check:
 python -c "import torch; print(torch.version.cuda)"
 ```
 
----
-
 ### OpenSlide import error
 
 If:
@@ -115,8 +115,6 @@ Reinstall:
 conda install -c conda-forge openslide
 ```
 
----
-
 ### NumPy compatibility issues
 
 If packages fail with NumPy 2.x:
@@ -124,3 +122,4 @@ If packages fail with NumPy 2.x:
 ```bash
 pip install "numpy<2.0.0"
 ```
+
