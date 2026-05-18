@@ -17,8 +17,12 @@ class RunConfig:
 
     # None: run all samples
     # list/tuple: run only selected samples
-    sample_ids: Optional[tuple[str, ...]] = None
-    # sample_ids: Optional[tuple[str, ...]] = ("NCBI681", "NCBI682")
+    sample_ids: Optional[tuple[str, ...]] = (
+        "NCBI783", 
+        "NCBI785", 
+        "TENX95", 
+        "TENX99"
+    ) # None | ("NCBI681", "NCBI682")
 
 
 # ============================================================
@@ -28,7 +32,7 @@ class RunConfig:
 @dataclass(frozen=True)
 class DownloadConfig: 
     root: Path = Path("./data").resolve()
-    subroot: str = "hest"
+    subroot: str = "hestradiomics"
 
     oncotrees: tuple[str] = field(default_factory=lambda: [
         "IDC", 

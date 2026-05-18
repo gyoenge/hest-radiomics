@@ -1,72 +1,45 @@
-from typing import List 
+from __future__ import annotations
 
-from hestradiomics.config import CONFIG
-
-from hestradiomics._download_hest import (
-    run_download, 
+from hestradiomics.config import DownloadConfig
+from hestradiomics.hest import (
+    run_download,
     run_gene_extraction,
 )
-from hestradiomics._segment import (
-    verify_or_download_model, 
-    segment_all_oncotrees_from_config, 
-)
-from hestradiomics._extract import (
-    run_radiomics_extraction_from_config, 
-)
 
 
-def run():
-    cfg = CONFIG
+def main():
+    download_cfg = DownloadConfig()
 
-    ### 
-
-    if cfg.run.run_hest_download:
-        run_download(
-            download_cfg=cfg.download,
-            sample_ids=cfg.sample_ids,
-        )
-        run_gene_extraction(
-            download_cfg=cfg.download,
-            sample_ids=cfg.sample_ids,
-        )
-    
-    print(f"[INFO] download done.")
-
-    ### 
-
-    verify_or_download_model(
-        model_path=str(cfg.cellseg.model_path),
-        model_name=cfg.cellseg.model_name,
+    # -------------------------------------------------------------------------
+    # 1. Download HEST
+    # -------------------------------------------------------------------------
+    run_download(
+        download_cfg=download_cfg,
+        sample_ids=None,
     )
 
-    segment_paths: List[str] = []
+    # -------------------------------------------------------------------------
+    # 2. Extract Gene Sets
+    # -------------------------------------------------------------------------
+    run_gene_extraction(
+        download_cfg=download_cfg,
+        sample_ids=None,
 
-    if cfg.run.run_segment:
-        segment_paths = segment_all_oncotrees_from_config(
-            download_cfg=cfg.download,
-            cellseg_cfg=cfg.cellseg,
-            sample_ids=cfg.sample_ids,
-        )
+        k_values=(
+            50,
+            100,
+            250,
+        ),
 
-    print(f"[INFO] segment done.")
-    print(f"[INFO] segmented samples: {len(segment_paths)}")
+        criteria_values=(
+            "var",
+            "mean",
+        ),
 
-    ###
-    if cfg.run.run_radiomics_extraction:
-        run_radiomics_extraction_from_config(config=CONFIG)
-
-    print(f"[INFO] extract done.")
-
-    ### 
-
-    # if cfg.run.run_statistics:
-    #     run_statistics(cfg.download, cfg.statistics)
-
-    print("[INFO] pipeline finished successfully")
+        min_cells_pct=0.1,
+    )
 
 
 if __name__ == "__main__":
-    run()
-
-
+    main()
 
