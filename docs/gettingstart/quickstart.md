@@ -2,8 +2,10 @@
 
 Run the full download and extraction pipeline:
 
+```md id="qzwruj"
 ```bash 
 python -m hestradiomics.run
+```
 ```
 
 This command executes the complete HEST-Radiomics pipeline, including:
@@ -15,6 +17,8 @@ This command executes the complete HEST-Radiomics pipeline, including:
 5. extracting radiomics features
 6. saving processed outputs
 7. generating visualizations and statistics analysis results 
+
+---
 
 Generated outputs are organized automatically under:
 
