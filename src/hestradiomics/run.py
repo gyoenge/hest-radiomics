@@ -9,6 +9,9 @@ from hestradiomics.hest import (
 from hestradiomics.segment import (
     segment_all_oncotrees,
 )
+from hestradiomics.extract import (
+    extract_all_oncotrees, 
+)
 from hestradiomics.analysis import (
     patch_visualization_from_oncotrees,
     segment_visualization_from_oncotrees, 
@@ -105,6 +108,14 @@ def main():
     # 5. Extract Radiomics Features
     # -------------------------------------------------------------------------
 
+    extract_all_oncotrees(
+        hest_root=download_dir,
+        oncotrees=hest_config.oncotrees,
+        sample_ids=sample_ids,
+        output_dirname=extract_config.output_dirname,
+        mask_source=extract_config.mask_source,
+        overwrite=extract_config.overwrite,
+    )
 
 if __name__ == "__main__":
     main()

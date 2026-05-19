@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict, Optional, Sequence
 
+import anndata as ad
 import geopandas as gpd
 import h5py
 import numpy as np
@@ -13,6 +14,10 @@ from hestradiomics.extract._cellcomposition import DistributionExtractor
 from hestradiomics.extract._cellshape import MorphologyExtractor
 from hestradiomics.extract._intensity_texture import RadiomicsFeatureExtractor
 from hestradiomics.extract.constants import *
+from hestradiomics.extract.postprocess import (
+    build_processed_feature_df,
+    get_radiomics_feature_columns,
+)
 from hestradiomics.utils import (
     PatchData,
     build_patch_row_base,
@@ -76,6 +81,68 @@ def load_cellseg_parquet(cellseg_path: str | Path) -> gpd.GeoDataFrame:
         cellseg_df = gpd.GeoDataFrame(cellseg_df, geometry="geometry")
 
     return cellseg_df
+
+
+# =============================================================================
+# Radiomics output saver
+# =============================================================================
+
+def _make_h5ad_obs(df: pd.DataFrame, feature_cols: Sequence[str]) -> pd.DataFrame:
+    obs = df.drop(columns=list(feature_cols), errors="ignore").copy()
+
+    if obs.index.name is None:
+        obs.index.name = "obs_id"
+
+    for col in obs.columns:
+        if obs[col].dtype == "object":
+            obs[col] = obs[col].where(obs[col].notna(), "")
+            obs[col] = obs[col].astype(str)
+
+    return obs
+
+
+def save_processed_radiomics_outputs(
+    processed_df: pd.DataFrame,
+    stats_df: pd.DataFrame,
+    output_parquet_path: str | Path,
+    output_h5ad_path: str | Path,
+) -> None:
+    output_parquet_path = Path(output_parquet_path)
+    output_h5ad_path = Path(output_h5ad_path)
+
+    output_parquet_path.parent.mkdir(parents=True, exist_ok=True)
+    output_h5ad_path.parent.mkdir(parents=True, exist_ok=True)
+
+    processed_df.to_parquet(output_parquet_path, index=False)
+
+    feature_cols = get_radiomics_feature_columns(processed_df)
+
+    X = (
+        processed_df[feature_cols]
+        .apply(pd.to_numeric, errors="coerce")
+        .to_numpy(dtype=np.float32)
+    )
+
+    obs = _make_h5ad_obs(
+        df=processed_df,
+        feature_cols=feature_cols,
+    )
+
+    var = pd.DataFrame(index=pd.Index(feature_cols, name="feature"))
+
+    adata = ad.AnnData(
+        X=X,
+        obs=obs,
+        var=var,
+    )
+
+    adata.uns["radiomics_feature_columns"] = list(feature_cols)
+    adata.uns["postprocess_stats"] = stats_df.to_dict(orient="list")
+
+    adata.write_h5ad(output_h5ad_path)
+
+    print(f"[SAVE] parquet: {output_parquet_path}")
+    print(f"[SAVE] h5ad: {output_h5ad_path}")
 
 
 # =============================================================================
@@ -368,14 +435,24 @@ def extract_sample_radiomics(
     output_path = Path(output_path)
     output_dir = Path(output_dir)
 
-    if output_path.exists() and not overwrite:
-        print(f"[SKIP] {sample_id} already exists: {output_path}")
+    output_parquet_path = output_path.with_suffix(".parquet")
+    output_h5ad_path = output_path.with_suffix(".h5ad")
+
+    if (
+        output_parquet_path.exists()
+        and output_h5ad_path.exists()
+        and not overwrite
+    ):
+        print(
+            f"[SKIP] {sample_id} already exists: "
+            f"{output_parquet_path}, {output_h5ad_path}"
+        )
         return
 
     if not patch_path.exists():
         raise FileNotFoundError(f"Patch file not found: {patch_path}")
 
-    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_parquet_path.parent.mkdir(parents=True, exist_ok=True)
 
     cellseg_df = None
     if mask_source == MASK_SOURCE_CELLSEG:
@@ -420,10 +497,16 @@ def extract_sample_radiomics(
 
             rows.append(row)
 
-    df = pd.DataFrame(rows)
-    df.to_parquet(output_path, index=False)
+    raw_df = pd.DataFrame(rows)
 
-    print(f"[SAVE] {sample_id}: {output_path}")
+    processed_df, stats_df = build_processed_feature_df(raw_df)
+
+    save_processed_radiomics_outputs(
+        processed_df=processed_df,
+        stats_df=stats_df,
+        output_parquet_path=output_parquet_path,
+        output_h5ad_path=output_h5ad_path,
+    )
 
 
 # =============================================================================
