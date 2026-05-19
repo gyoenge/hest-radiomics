@@ -1,9 +1,13 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from pathlib import Path
+from typing import Any, Dict, Optional, Sequence
 
 import geopandas as gpd
+import h5py
 import numpy as np
+import pandas as pd
+from tqdm import tqdm
 
 from hestradiomics.extract._cellcomposition import DistributionExtractor
 from hestradiomics.extract._cellshape import MorphologyExtractor
@@ -19,6 +23,64 @@ from hestradiomics.utils import (
     safe_update_features,
 )
 
+
+# =============================================================================
+# H5 utils
+# =============================================================================
+
+def find_h5_key(f: h5py.File, candidates: Sequence[str]) -> str:
+    for key in candidates:
+        if key in f:
+            return key
+
+    available = list(f.keys())
+    raise KeyError(
+        f"None of the candidate keys were found. "
+        f"candidates={list(candidates)}, available={available}"
+    )
+
+
+def find_h5_keys(f: h5py.File) -> tuple[str, str, str]:
+    img_key = find_h5_key(
+        f,
+        candidates=("img", "imgs", "images", "patches"),
+    )
+    coords_key = find_h5_key(
+        f,
+        candidates=("coords", "coord", "coordinates", "spatial"),
+    )
+    barcodes_key = find_h5_key(
+        f,
+        candidates=("barcodes", "barcode", "spot_id", "spot_ids"),
+    )
+
+    return img_key, coords_key, barcodes_key
+
+
+# =============================================================================
+# Cell segmentation loader
+# =============================================================================
+
+def load_cellseg_parquet(cellseg_path: str | Path) -> gpd.GeoDataFrame:
+    cellseg_path = Path(cellseg_path)
+
+    if not cellseg_path.exists():
+        raise FileNotFoundError(f"Cell segmentation file not found: {cellseg_path}")
+
+    cellseg_df = gpd.read_parquet(cellseg_path)
+
+    if "geometry" not in cellseg_df.columns:
+        raise ValueError(f"'geometry' column not found in {cellseg_path}")
+
+    if not isinstance(cellseg_df, gpd.GeoDataFrame):
+        cellseg_df = gpd.GeoDataFrame(cellseg_df, geometry="geometry")
+
+    return cellseg_df
+
+
+# =============================================================================
+# Patch processor
+# =============================================================================
 
 class PatchProcessor:
     def __init__(
@@ -58,7 +120,7 @@ class PatchProcessor:
 
     def process_single_patch(
         self,
-        f,
+        f: h5py.File,
         img_key: str,
         coords_key: str,
         barcodes_key: str,
@@ -82,7 +144,6 @@ class PatchProcessor:
             output_dir=output_dir,
             sample_id=sample_id,
         )
-
         row[STATUS_COLUMN] = STATUS_OK
 
         if mask_source == MASK_SOURCE_THRESHOLD:
@@ -118,9 +179,7 @@ class PatchProcessor:
             label=self.label,
         )
 
-        row[PATCH_MASK_AREA_COLUMN] = int(
-            np.count_nonzero(mask > 0)
-        )
+        row[PATCH_MASK_AREA_COLUMN] = int(np.count_nonzero(mask > 0))
 
         if row[PATCH_MASK_AREA_COLUMN] < PATCH_MASK_AREA_MIN_THRESHOLD:
             row[STATUS_COLUMN] = STATUS_SKIPPED_SMALL_MASK
@@ -164,19 +223,13 @@ class PatchProcessor:
             patch_idx=patch.patch_idx,
         )
 
-        row[N_CELLS_TOTAL_COLUMN] = int(
-            len(patch_cellseg)
-        )
+        row[N_CELLS_TOTAL_COLUMN] = int(len(patch_cellseg))
 
         if len(patch_cellseg) == 0:
             row[STATUS_COLUMN] = STATUS_SKIPPED_NO_CELLSEG
 
             if self.distribution_extractor:
-                row.update(
-                    self.distribution_extractor.extract(
-                        patch_cellseg
-                    )
-                )
+                row.update(self.distribution_extractor.extract(patch_cellseg))
 
             return row
 
@@ -186,9 +239,7 @@ class PatchProcessor:
             label=self.label,
         )
 
-        row[CELLSEG_MASK_AREA_COLUMN] = int(
-            np.count_nonzero(merged_mask > 0)
-        )
+        row[CELLSEG_MASK_AREA_COLUMN] = int(np.count_nonzero(merged_mask > 0))
 
         if self.intensity_extractor:
             safe_update_features(
@@ -228,17 +279,19 @@ class PatchProcessor:
         if self.distribution_extractor:
             safe_update_features(
                 row,
-                lambda: self.distribution_extractor.extract(
-                    patch_cellseg
-                ),
+                lambda: self.distribution_extractor.extract(patch_cellseg),
                 ERROR_DISTRIBUTION,
             )
 
         return row
 
 
+# =============================================================================
+# Processor factory
+# =============================================================================
+
 def build_default_patch_processor(
-    filters=None,
+    filters: Optional[Sequence[str]] = None,
     label: int = EXTRACTOR_DEFAULT_LABEL,
 ) -> PatchProcessor:
     filters = filters or EXTRACTOR_DEFAULT_FILTERS
@@ -263,7 +316,7 @@ def build_default_patch_processor(
 
 
 def process_single_patch(
-    f,
+    f: h5py.File,
     img_key: str,
     coords_key: str,
     barcodes_key: str,
@@ -272,7 +325,7 @@ def process_single_patch(
     sample_id: str,
     mask_source: str = MASK_SOURCE_THRESHOLD,
     cellseg_df: Optional[gpd.GeoDataFrame] = None,
-    filters=None,
+    filters: Optional[Sequence[str]] = None,
     label: int = EXTRACTOR_DEFAULT_LABEL,
     use_cache: bool = True,
 ) -> Dict[str, Any]:
@@ -295,19 +348,168 @@ def process_single_patch(
     )
 
 
-def extract_all_oncotrees_from_config(
-    download_cfg,
-    extract_cfg,
-    sample_ids=None,
-):
-    return extract_all_oncotrees(
-        hest_root=str(download_cfg.download_dir),
-        oncotrees=list(download_cfg.oncotrees),
-        sample_ids=sample_ids,
-        output_dirname=extract_cfg.output_dirname,
-        mask_source=extract_cfg.mask_source,
-        filters=extract_cfg.filters,
-        label=extract_cfg.label,
-        use_cache=extract_cfg.use_cache,
-        overwrite=extract_cfg.overwrite,
+# =============================================================================
+# Sample-level extraction
+# =============================================================================
+
+def extract_sample_radiomics(
+    patch_path: str | Path,
+    output_path: str | Path,
+    sample_id: str,
+    output_dir: str | Path,
+    mask_source: str = MASK_SOURCE_THRESHOLD,
+    cellseg_path: Optional[str | Path] = None,
+    filters: Optional[Sequence[str]] = None,
+    label: int = EXTRACTOR_DEFAULT_LABEL,
+    use_cache: bool = True,
+    overwrite: bool = False,
+) -> None:
+    patch_path = Path(patch_path)
+    output_path = Path(output_path)
+    output_dir = Path(output_dir)
+
+    if output_path.exists() and not overwrite:
+        print(f"[SKIP] {sample_id} already exists: {output_path}")
+        return
+
+    if not patch_path.exists():
+        raise FileNotFoundError(f"Patch file not found: {patch_path}")
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    cellseg_df = None
+    if mask_source == MASK_SOURCE_CELLSEG:
+        if cellseg_path is None:
+            raise ValueError(
+                f"cellseg_path is required when mask_source='{MASK_SOURCE_CELLSEG}'"
+            )
+        cellseg_df = load_cellseg_parquet(cellseg_path)
+
+    processor = build_default_patch_processor(
+        filters=filters,
+        label=label,
     )
+
+    rows: list[Dict[str, Any]] = []
+
+    with h5py.File(patch_path, "r") as f:
+        img_key, coords_key, barcodes_key = find_h5_keys(f)
+        n_patches = len(f[img_key])
+
+        for i in tqdm(range(n_patches), desc=f"[EXTRACT] {sample_id}"):
+            try:
+                row = processor.process_single_patch(
+                    f=f,
+                    img_key=img_key,
+                    coords_key=coords_key,
+                    barcodes_key=barcodes_key,
+                    i=i,
+                    output_dir=str(output_dir),
+                    sample_id=sample_id,
+                    mask_source=mask_source,
+                    cellseg_df=cellseg_df,
+                    use_cache=use_cache,
+                )
+            except Exception as e:
+                row = {
+                    SAMPLE_ID_COLUMN: sample_id,
+                    PATCH_IDX_COLUMN: i,
+                    STATUS_COLUMN: STATUS_ERROR,
+                    ERROR_COLUMN: str(e),
+                }
+
+            rows.append(row)
+
+    df = pd.DataFrame(rows)
+    df.to_parquet(output_path, index=False)
+
+    print(f"[SAVE] {sample_id}: {output_path}")
+
+
+# =============================================================================
+# Oncotree-level extraction
+# =============================================================================
+
+def collect_patch_paths(
+    patch_dir: Path,
+    sample_ids: Optional[Sequence[str]] = None,
+) -> list[Path]:
+    if sample_ids is None:
+        return sorted(patch_dir.glob("*.h5"))
+
+    patch_paths: list[Path] = []
+
+    for sample_id in sample_ids:
+        patch_path = patch_dir / f"{sample_id}.h5"
+        if patch_path.exists():
+            patch_paths.append(patch_path)
+
+    return patch_paths
+
+
+def extract_all_oncotrees(
+    hest_root: str | Path,
+    oncotrees: Sequence[str],
+    sample_ids: Optional[Sequence[str]] = None,
+    output_dirname: str = "radiomics",
+    mask_source: str = MASK_SOURCE_THRESHOLD,
+    filters: Optional[Sequence[str]] = None,
+    label: int = EXTRACTOR_DEFAULT_LABEL,
+    use_cache: bool = True,
+    overwrite: bool = False,
+) -> None:
+    hest_root = Path(hest_root)
+
+    for oncotree in oncotrees:
+        patch_dir = hest_root / oncotree / "patches"
+        cellseg_dir = hest_root / oncotree / "segment"
+        output_dir = hest_root / oncotree / output_dirname
+
+        if not patch_dir.exists():
+            print(f"[SKIP] Patch directory not found: {patch_dir}")
+            continue
+
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        patch_paths = collect_patch_paths(
+            patch_dir=patch_dir,
+            sample_ids=sample_ids,
+        )
+
+        print("\n" + "=" * 80)
+        print(f"[ONCOTREE] {oncotree}")
+        print(f"[PATCH DIR] {patch_dir}")
+        print(f"[CELLSEG DIR] {cellseg_dir}")
+        print(f"[OUTPUT DIR] {output_dir}")
+        print(f"[NUM SAMPLES] {len(patch_paths)}")
+        print(f"[MASK SOURCE] {mask_source}")
+        print(f"[USE CACHE] {use_cache}")
+        print(f"[OVERWRITE] {overwrite}")
+        print("=" * 80)
+
+        for patch_path in patch_paths:
+            sample_id = patch_path.stem
+            output_path = output_dir / f"{sample_id}.parquet"
+
+            cellseg_path = None
+            if mask_source == MASK_SOURCE_CELLSEG:
+                cellseg_path = cellseg_dir / f"{sample_id}.parquet"
+
+            try:
+                print(f"\n[SAMPLE] {sample_id}")
+
+                extract_sample_radiomics(
+                    patch_path=patch_path,
+                    output_path=output_path,
+                    sample_id=sample_id,
+                    output_dir=output_dir,
+                    mask_source=mask_source,
+                    cellseg_path=cellseg_path,
+                    filters=filters,
+                    label=label,
+                    use_cache=use_cache,
+                    overwrite=overwrite,
+                )
+
+            except Exception as e:
+                print(f"[ERROR] {oncotree}/{sample_id}: {e}")
