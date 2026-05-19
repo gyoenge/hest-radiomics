@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+# import os
+# import time
+
+# os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
+
 from hestradiomics.config import CONFIG
 from hestradiomics.hest import (
     huggingface_checkin, 

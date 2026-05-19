@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from concurrent.futures import ProcessPoolExecutor, as_completed
+import multiprocessing as mp
 from pathlib import Path
 from typing import Any, Dict, Optional, Sequence
 
@@ -411,7 +412,7 @@ def process_patch_chunk_worker(
     filters: Optional[Sequence[str]],
     label: int,
     use_cache: bool,
-) -> list[Dict[str, Any]]:
+) -> tuple[list[Dict[str, Any]], int]:
     rows: list[Dict[str, Any]] = []
 
     cellseg_df = None
@@ -454,7 +455,7 @@ def process_patch_chunk_worker(
 
             rows.append(row)
 
-    return rows
+    return rows, len(indices)
 
 
 def _extract_rows_single_process(
@@ -529,7 +530,12 @@ def _extract_rows_multi_process(
     rows: list[Dict[str, Any]] = []
     chunks = chunk_indices(n_patches, chunk_size=chunk_size)
 
-    with ProcessPoolExecutor(max_workers=num_workers) as executor:
+    mp_context = mp.get_context("fork")
+
+    with ProcessPoolExecutor(
+        max_workers=num_workers,
+        mp_context=mp_context,
+    ) as executor:
         futures = [
             executor.submit(
                 process_patch_chunk_worker,
@@ -546,12 +552,23 @@ def _extract_rows_multi_process(
             for chunk in chunks
         ]
 
-        for future in tqdm(
-            as_completed(futures),
-            total=len(futures),
-            desc=f"[EXTRACT-MP] {sample_id}",
-        ):
-            rows.extend(future.result())
+        with tqdm(
+            total=len(chunks),
+            desc=f"[CHUNK-MP] {sample_id}",
+            position=0,
+            leave=True,
+        ) as chunk_pbar, tqdm(
+            total=n_patches,
+            desc=f"[PATCH-MP] {sample_id}",
+            position=1,
+            leave=True,
+        ) as patch_pbar:
+            for future in as_completed(futures):
+                chunk_rows, n_done = future.result()
+
+                rows.extend(chunk_rows)
+                chunk_pbar.update(1)
+                patch_pbar.update(n_done)
 
     rows = sorted(
         rows,
