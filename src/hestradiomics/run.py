@@ -84,25 +84,27 @@ def main():
     # 4. Visualize Patches / Segment Overlays
     # -------------------------------------------------------------------------
 
-    patch_visualization_from_oncotrees(
-        download_dir=download_dir,
-        oncotrees=hest_config.oncotrees,
-        sample_ids=sample_ids,
-        vis_ratio=visualize_config.vis_ratio,
-        overwrite_visualization=visualize_config.overwrite,
-    )
+    # patch_visualization_from_oncotrees(
+    #     download_dir=download_dir,
+    #     oncotrees=hest_config.oncotrees,
+    #     sample_ids=sample_ids,
+    #     vis_ratio=visualize_config.vis_ratio,
+    #     overwrite_visualization=visualize_config.overwrite,
+    # )
 
-    segment_visualization_from_oncotrees(
-        hest_root=download_dir,
-        oncotrees=hest_config.oncotrees,
-        sample_ids=sample_ids,
-        vis_ratio=visualize_config.vis_ratio,
-        overwrite=visualize_config.overwrite,
-        use_class_color=True,
-    )
+    # print("\n-------------------------------------------------------------------------\n")
 
-    print("[DONE] Visualization completed.")
-    print("\n-------------------------------------------------------------------------\n")
+    # segment_visualization_from_oncotrees(
+    #     hest_root=download_dir,
+    #     oncotrees=hest_config.oncotrees,
+    #     sample_ids=sample_ids,
+    #     vis_ratio=visualize_config.vis_ratio,
+    #     overwrite=visualize_config.overwrite,
+    #     use_class_color=True,
+    # )
+
+    # print("[DONE] Visualization completed.")
+    # print("\n-------------------------------------------------------------------------\n")
 
     # -------------------------------------------------------------------------
     # 5. Extract Radiomics Features
