@@ -36,6 +36,7 @@ dependencies = [
     "matplotlib",
 
     # bio / st
+    "anndata",
     "scanpy",
 
     # utilities
