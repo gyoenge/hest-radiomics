@@ -3,6 +3,7 @@ from __future__ import annotations
 import inspect
 import os
 from typing import Any, List, Optional
+import warnings
 
 os.environ["RAY_OBJECT_STORE_ALLOW_SLOW_STORAGE"] = "1"
 
@@ -34,6 +35,38 @@ def infer_cellvit_model_type(
         return "CellViT"
 
     raise ValueError(f"Cannot infer CellViT model type from {model_name}")
+
+
+def resolve_device(device: str = "cuda:0") -> str:
+    if device is None:
+        device = "cuda:0"
+
+    device = str(device)
+
+    if device == "cuda":
+        device = "cuda:0"
+
+    if device.startswith("cuda"):
+        if not torch.cuda.is_available():
+            print("[WARN] CUDA requested but not available. Falling back to CPU.")
+            return "cpu"
+
+        try:
+            gpu_id = int(device.split(":")[-1]) if ":" in device else 0
+        except ValueError:
+            gpu_id = 0
+
+        if gpu_id >= torch.cuda.device_count():
+            print(
+                f"[WARN] Requested {device}, but only "
+                f"{torch.cuda.device_count()} CUDA device(s) available. "
+                "Falling back to cuda:0."
+            )
+            return "cuda:0"
+
+        return f"cuda:{gpu_id}"
+
+    return device
 
 
 def verify_or_download_model(
@@ -130,7 +163,13 @@ class CellViTInferenceAdapter:
         self.model_path = model_path
         self.model_name = infer_cellvit_model_type(model_name)
         self.output_dir = output_dir
-        self.device = device
+        self.device = resolve_device(device)
+
+        warnings.filterwarnings(
+            "ignore",
+            message=r"You are using `torch.load` with `weights_only=False`.*",
+            category=FutureWarning,
+        )
 
         self._tmp_root = runtime_dir or os.path.join(
             output_dir,
@@ -176,7 +215,7 @@ class CellViTInferenceAdapter:
             elif name in ("gpu", "gpu_id", "gpu_ids"):
                 gpu_id = (
                     int(self.device.split(":")[-1])
-                    if "cuda:" in self.device
+                    if self.device.startswith("cuda:")
                     else 0
                 )
                 kwargs[name] = [gpu_id] if name == "gpu_ids" else gpu_id
@@ -275,7 +314,8 @@ class CellViTInferenceAdapter:
         import cv2
 
         pil = Image.fromarray(image)
-        x = self.runner.inference_transforms(pil).unsqueeze(0).to(self.device)
+        x = self.runner.inference_transforms(pil).unsqueeze(0)
+        x = x.to(torch.device(self.device))
 
         with torch.no_grad():
             out = self.runner.model(x)
