@@ -95,7 +95,7 @@ class ExtractConfig:
 
 @dataclass(frozen=True)
 class VisualizeConfig: 
-    vis_ratio = float = 0.02 # 0.0~1.0 
+    vis_ratio: float = 0.02 # 0.0~1.0 
     overwrite: bool = True 
 
 

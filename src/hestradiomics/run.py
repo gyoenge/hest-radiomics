@@ -116,19 +116,19 @@ def main():
     # 5. Extract Radiomics Features
     # -------------------------------------------------------------------------
 
-    # extract_all_oncotrees(
-    #     hest_root=download_dir,
-    #     oncotrees=hest_config.oncotrees,
-    #     sample_ids=sample_ids,
-    #     output_dirname=extract_config.output_dirname,
-    #     mask_source=extract_config.mask_source,
-    #     overwrite=extract_config.overwrite,
-    #     num_workers=2,
-    #     chunk_size=16,
-    # )
+    extract_all_oncotrees(
+        hest_root=download_dir,
+        oncotrees=hest_config.oncotrees,
+        sample_ids=sample_ids,
+        output_dirname=extract_config.output_dirname,
+        mask_source=extract_config.mask_source,
+        overwrite=extract_config.overwrite,
+        num_workers=2,
+        chunk_size=16,
+    )
 
-    # print("[DONE] Radiomics extraction completed.")
-    # print("\n-------------------------------------------------------------------------\n")
+    print("[DONE] Radiomics extraction completed.")
+    print("\n-------------------------------------------------------------------------\n")
 
     # -------------------------------------------------------------------------
     # 6. Analysis Radiomics Statistics 
