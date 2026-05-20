@@ -17,16 +17,6 @@ from hestradiomics.utils import filter_sample_ids
 # Config
 # =============================================================================
 
-HEST_ROOT = Path("/root/workspace/hest-radiomics/data/hestradiomics")
-ONCOTREE = "IDC"
-SAMPLE_IDS = ["TENX95"]
-
-RADIOMICS_DIR = HEST_ROOT / ONCOTREE / "radiomics"
-PATCH_DIR = HEST_ROOT / ONCOTREE / "patches"
-OUTPUT_DIR = HEST_ROOT / ONCOTREE / "radiomics_statistics"
-
-REPRESENTATIVE_STATS = ["min", "q25", "q50", "q75", "max"]
-
 META_COLS = {
     "sample_id",
     "patch_idx",
