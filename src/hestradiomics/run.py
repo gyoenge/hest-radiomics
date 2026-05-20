@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-# import os
+import os
 # import time
 
-# os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
+os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
 
 from hestradiomics.config import CONFIG
 from hestradiomics.hest import (
@@ -115,16 +115,17 @@ def main():
     # 5. Extract Radiomics Features
     # -------------------------------------------------------------------------
 
-    extract_all_oncotrees(
-        hest_root=download_dir,
-        oncotrees=hest_config.oncotrees,
-        sample_ids=sample_ids,
-        output_dirname=extract_config.output_dirname,
-        mask_source=extract_config.mask_source,
-        overwrite=extract_config.overwrite,
-        num_workers=8,
-        chunk_size=64,
-    )
+    # extract_all_oncotrees(
+    #     hest_root=download_dir,
+    #     oncotrees=hest_config.oncotrees,
+    #     sample_ids=sample_ids,
+    #     output_dirname=extract_config.output_dirname,
+    #     mask_source=extract_config.mask_source,
+    #     overwrite=extract_config.overwrite,
+    #     num_workers=2,
+    #     chunk_size=16,
+    # )
+
 
 if __name__ == "__main__":
     main()
