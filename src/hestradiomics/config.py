@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field 
 from pathlib import Path 
-from typing import Optional, List
+from typing import Optional 
 
 
 # ============================================================
@@ -109,7 +109,9 @@ class StatisticsConfig:
     # overwrite: bool = True 
     save_boxplot: bool = True,
     save_representative: bool = True,
-    representative_stats: List[str] = ["min", "q25", "q50", "q75", "max"],
+    representative_stats: tuple[str] = field(
+        default_factory=lambda: ["min", "q25", "q50", "q75", "max"]
+    )
 
 
 # ============================================================
